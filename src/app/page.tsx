@@ -3,45 +3,11 @@
 import React from 'react';
 import { Shield, Zap, Globe } from 'lucide-react';
 import SpotlightCard from './ui/spotlightcard';
+import GridBackground from './ui/background';
 
 export default function Home() {
     return (
-        <div className="min-h-screen text-white relative overflow-hidden">
-            {/* Complex Background */}
-            <div className="fixed inset-0 bg-[#0A1921]"> {/* Dark teal base color */}
-                {/* Primary grid - larger squares */}
-                <div
-                    className="absolute inset-0 opacity-20"
-                    style={{
-                        backgroundImage: `
-                  linear-gradient(to right, rgb(22, 78, 99) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgb(22, 78, 99) 1px, transparent 1px)
-                `,
-                        backgroundSize: '100px 100px'
-                    }}
-                />
-
-                {/* Secondary grid - smaller squares */}
-                <div
-                    className="absolute inset-0 opacity-10"
-                    style={{
-                        backgroundImage: `
-                  linear-gradient(to right, rgb(22, 78, 99) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgb(22, 78, 99) 1px, transparent 1px)
-                `,
-                        backgroundSize: '20px 20px'
-                    }}
-                />
-
-                {/* Radial gradient overlay */}
-                <div
-                    className="absolute inset-0 opacity-80"
-                    style={{
-                        background: 'radial-gradient(circle at 50% 50%, rgba(10, 25, 33, 0) 0%, rgba(10, 25, 33, 0.8) 50%, #0A1921 100%)'
-                    }}
-                />
-            </div>
-
+        <GridBackground>
             {/* Content Container */}
             <div className="relative">
                 {/* Navigation */}
@@ -119,10 +85,11 @@ export default function Home() {
                             payments for global reach.
                         </p>
                     </SpotlightCard>
-
-
                 </div>
             </div>
-        </div>
+     </GridBackground>
+
+              
+
     );
 };
