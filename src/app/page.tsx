@@ -4,6 +4,7 @@ import React from 'react';
 import { Shield, Zap, Globe } from 'lucide-react';
 import SpotlightCard from './ui/spotlightcard';
 import GridBackground from './ui/background';
+import Link from 'next/link'
 
 export default function Home() {
     return (
@@ -22,9 +23,11 @@ export default function Home() {
                         <a href="#support" className="hover:text-blue-400 transition-colors">Support</a>
                     </div>
                     <div className="space-x-4">
-                        <button className="px-4 py-2 hover:text-blue-400 transition-colors">Sign In</button>
+                        <button className="px-4 py-2 hover:text-blue-400 transition-colors">
+                            <Link href="./registeration/login">Sign In</Link>
+                        </button>
                         <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
-                            Sign Up
+                            <Link href="./registeration/signup">Get Started</Link>
                         </button>
                     </div>
                 </nav>
@@ -87,9 +90,9 @@ export default function Home() {
                     </SpotlightCard>
                 </div>
             </div>
-     </GridBackground>
+        </GridBackground>
 
-              
+
 
     );
 };

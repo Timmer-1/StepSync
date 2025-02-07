@@ -16,12 +16,12 @@ export default function SignIn() {
     // Add your authentication logic here
     console.log('Sign in attempt:', { email, password, rememberMe });
   };
- /* 
- TODO List: 
-    - Fix Logo
-    - Add Supabase Auth 
-    - Add Google, GitHub and another one? 
- */
+  /* 
+  TODO List: 
+     - Fix Logo
+     - Add Supabase Auth 
+     - Add Google, GitHub and another one? 
+  */
   return (
     <GridBackground>
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -34,22 +34,22 @@ export default function SignIn() {
             <h2 className="text-2xl font-bold">Welcome back</h2>
             <p className="text-gray-400 mt-2">Please enter your details to sign in.</p>
           </div>
-        
+
           {/* Social Sign In */}
           <div className="grid grid-cols-3 gap-4">
             <button className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
               <svg className="w-6 h-6" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 1.5c4.687 0 8.5 3.813 8.5 8.5 0 4.687-3.813 8.5-8.5 8.5-4.687 0-8.5-3.813-8.5-8.5 0-4.687 3.813-8.5 8.5-8.5z"/>
+                <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 1.5c4.687 0 8.5 3.813 8.5 8.5 0 4.687-3.813 8.5-8.5 8.5-4.687 0-8.5-3.813-8.5-8.5 0-4.687 3.813-8.5 8.5-8.5z" />
               </svg>
             </button>
             <button className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
               <svg className="w-6 h-6" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 1.5c4.687 0 8.5 3.813 8.5 8.5 0 4.687-3.813 8.5-8.5 8.5-4.687 0-8.5-3.813-8.5-8.5 0-4.687 3.813-8.5 8.5-8.5z"/>
+                <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 1.5c4.687 0 8.5 3.813 8.5 8.5 0 4.687-3.813 8.5-8.5 8.5-4.687 0-8.5-3.813-8.5-8.5 0-4.687 3.813-8.5 8.5-8.5z" />
               </svg>
             </button>
             <button className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
               <svg className="w-6 h-6" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 1.5c4.687 0 8.5 3.813 8.5 8.5 0 4.687-3.813 8.5-8.5 8.5-4.687 0-8.5-3.813-8.5-8.5 0-4.687 3.813-8.5 8.5-8.5z"/>
+                <path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 1.5c4.687 0 8.5 3.813 8.5 8.5 0 4.687-3.813 8.5-8.5 8.5-4.687 0-8.5-3.813-8.5-8.5 0-4.687 3.813-8.5 8.5-8.5z" />
               </svg>
             </button>
           </div>
