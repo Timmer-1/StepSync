@@ -112,7 +112,7 @@ export default function SignIn() {
                 <span className="text-sm">Remember me</span>
               </label>
               <Link
-                href="/registeration/resetpassword"
+                href="/registeration/forgotpassword"
                 className="text-sm text-green-400 hover:text-green-300"
               >
                 Forgot password?
