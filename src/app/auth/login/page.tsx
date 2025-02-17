@@ -1,22 +1,16 @@
 'use client'
-
 import { useState } from 'react';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import GridBackground from '@/app/ui/background';
 import { TextHoverEffect } from "@/app/ui/text-hover-effect";
+import { login } from './action';
 
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Add your authentication logic here
-    console.log('Sign in attempt:', { email, password, rememberMe });
-  };
   /* 
   TODO List: 
      - Fix Logo
@@ -83,16 +77,15 @@ export default function SignIn() {
           </div>
 
           {/* Sign In Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
                 Email
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-white/5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
                 placeholder="Enter your email"
                 required
@@ -106,9 +99,8 @@ export default function SignIn() {
               <div className="relative">
                 <input
                   id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 bg-white/5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
                   placeholder="Enter your password"
                   required
@@ -141,22 +133,25 @@ export default function SignIn() {
               </Link>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-3 px-4 bg-green-400 text-gray-900 rounded-lg font-medium hover:bg-green-300 transition-colors"
-            >
-              Sign in
-            </button>
+            <div className="space-y-3">
+              <button
+                formAction={login}
+                className="w-full py-3 px-4 bg-green-400 text-gray-900 rounded-lg font-medium hover:bg-green-300 transition-colors"
+              >
+                Sign in
+              </button>
+
+            </div>
           </form>
 
           <p className="text-center text-sm text-gray-400">
             Don't have an account?{' '}
-            <Link
-              href="/auth/signup"
+            <button
+              onClick={() => setIsSignUp(!isSignUp)}
               className="text-green-400 hover:text-green-300 font-medium"
             >
-              Sign Up
-            </Link>
+              {isSignUp ? 'Sign In' : 'Sign Up'}
+            </button>
           </p>
         </div>
       </div>

@@ -4,21 +4,13 @@ import GridBackground from "@/app/ui/background";
 import { useState } from "react";
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image'
 import { TextHoverEffect } from "@/app/ui/text-hover-effect";
+import { signup } from '../login/action';
 
 export default function SignUp() {
-  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Add your authentication logic here
-    console.log('Sign Up attempt:', { email, password });
-  };
-
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  // TODO: Add a Page to show you signed up and need to verify your email
   return (
     <GridBackground>
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -78,18 +70,16 @@ export default function SignUp() {
             <div className="h-px bg-gray-600 flex-1" />
           </div>
 
-          {/* Sign In Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-
+          {/* Sign Up Form */}
+          <form action={signup} className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-2">
                 Full Name
               </label>
               <input
                 id="name"
-                type="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                name="name"
+                type="text"
                 className="w-full px-4 py-3 bg-white/5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
                 placeholder="Enter your name"
                 required
@@ -102,9 +92,8 @@ export default function SignUp() {
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-white/5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
                 placeholder="Enter your email"
                 required
@@ -118,9 +107,8 @@ export default function SignUp() {
               <div className="relative">
                 <input
                   id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 bg-white/5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
                   placeholder="Enter your password"
                   required
@@ -139,15 +127,19 @@ export default function SignUp() {
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-600 text-green-400 focus:ring-green-400 bg-white/5"
+                  required
                 />
-                <span className="text-sm">I agree to all Term, Privacy Policy and Fees</span>
+                <span className="text-sm">I agree to all Terms, Privacy Policy and Fees</span>
               </label>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-green-400 text-gray-900 rounded-lg font-medium hover:bg-green-300 transition-colors"
+              disabled={!termsAccepted}
+              className="w-full py-3 px-4 bg-green-400 text-gray-900 rounded-lg font-medium hover:bg-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Sign Up
             </button>
@@ -156,7 +148,7 @@ export default function SignUp() {
           <p className="text-center text-sm text-gray-400">
             Have an account?{' '}
             <Link
-              href="/registeration/login"
+              href="/auth/login"
               className="text-green-400 hover:text-green-300 font-medium"
             >
               Login
