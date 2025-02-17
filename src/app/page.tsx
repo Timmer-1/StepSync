@@ -55,7 +55,7 @@ export default function Home() {
                             Start Now
                         </button>
                         <button className="border border-slate-600 px-6 py-3 rounded-lg hover:border-slate-400 font-medium backdrop-blur-sm bg-slate-800/30">
-                            Explore Zenly
+                            Explore ProjectA
                         </button>
                     </div>
                 </main>

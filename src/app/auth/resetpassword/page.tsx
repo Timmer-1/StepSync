@@ -3,6 +3,7 @@
 import GridBackground from "@/app/ui/background"
 import { useState } from "react";
 import Link from 'next/link'
+import { TextHoverEffect } from "@/app/ui/text-hover-effect";
 
 export default function ForgotPassword() {
   const [newPassword, setNewPassword] = useState('');
@@ -11,12 +12,12 @@ export default function ForgotPassword() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-    
+
     if (newPassword.length < 8) {
       setError('Password must be at least 8 characters long');
       return;
@@ -30,15 +31,13 @@ export default function ForgotPassword() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 w-full max-w-md space-y-8">
           {/* Logo and Title */}
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <div className="w-8 h-8 bg-green-400 rounded-full" />
-            </div>
+          <div className="text-center space-y-2 px-4">
+            <TextHoverEffect text="ProjectA" duration={0.2} />
             <h2 className="text-2xl font-bold">Reset Password</h2>
             <p className="text-gray-400 mt-2">Please enter your new password below.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 ">
             <div className="space-y-4">
               <div>
                 <label htmlFor="newPassword" className="block text-sm font-medium mb-2">
