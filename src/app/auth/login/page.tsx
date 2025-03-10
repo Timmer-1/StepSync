@@ -5,11 +5,31 @@ import { Eye, EyeOff } from 'lucide-react';
 import GridBackground from '@/app/ui/background';
 import { TextHoverEffect } from "@/app/ui/text-hover-effect";
 import { login } from './action';
+import { createClient } from '@/utils/supabase/client';
 
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  const supabase = createClient();
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+      // The user will be redirected to Google's auth page
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+    }
+  };
 
   /* 
   TODO List: 
@@ -31,7 +51,7 @@ export default function SignIn() {
           {/* Social Sign In */}
           <div className="grid grid-cols-2 gap-4">
             {/* Google Signup Button */}
-            <button className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
+            <button onClick={handleGoogleSignIn} className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
               <svg
                 viewBox="0 0 24 24"
                 className="w-6 h-6 mr-2"
@@ -56,6 +76,7 @@ export default function SignIn() {
               </svg>
               <span>Login with Google</span>
             </button>
+
 
             {/* GitHub Signup Button */}
             <button className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">

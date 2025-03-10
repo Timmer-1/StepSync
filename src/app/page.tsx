@@ -14,7 +14,7 @@ export default function Home() {
                 {/* Navigation */}
                 <nav className="flex justify-between items-center p-6">
                     <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 text-transparent bg-clip-text">
-                        ProjectA
+                        StepSync
                     </div>
                     <div className="hidden md:flex space-x-6">
                         <a href="#about" className="hover:text-blue-400 transition-colors">About</a>
@@ -24,10 +24,10 @@ export default function Home() {
                     </div>
                     <div className="space-x-4">
                         <button className="px-4 py-2 hover:text-blue-400 transition-colors">
-                            <Link href="./registeration/login">Sign In</Link>
+                            <Link href="./auth/login">Sign In</Link>
                         </button>
                         <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
-                            <Link href="./registeration/signup">Get Started</Link>
+                            <Link href="./auth/signup">Get Started</Link>
                         </button>
                     </div>
                 </nav>
@@ -39,23 +39,25 @@ export default function Home() {
                     </div>
 
                     <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                        <span className="text-white">Smart Planning</span>
+                        <span className="text-white">Stay Alive,</span>
                         <br />
                         <span className="bg-gradient-to-r from-blue-400 via-teal-400 to-blue-500 text-transparent bg-clip-text">
-                            Made Simple
+                            Stay Connected
                         </span>
                     </h1>
 
                     <p className="text-slate-300 max-w-2xl mx-auto mb-12 text-lg">
-                        Stay organized and connected with ease. Share tasks, set reminders, track locations, and split expenses—all in one seamless app for families, friends, and roommates.
+                        Crush your fitness goals while keeping friends and family in the loop. Track workouts, monitor nutrition, and join challenges—all in one seamless app designed to make health and wellness fun, engaging, and rewarding.
                     </p>
 
                     <div className="flex justify-center gap-4">
-                        <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium">
-                            Start Now
-                        </button>
+                        <Link href="/auth/signup">
+                            <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium">
+                                Start Now
+                            </button>
+                        </Link>
                         <button className="border border-slate-600 px-6 py-3 rounded-lg hover:border-slate-400 font-medium backdrop-blur-sm bg-slate-800/30">
-                            Explore ProjectA
+                            Explore StepSync
                         </button>
                     </div>
                 </main>
@@ -91,8 +93,5 @@ export default function Home() {
                 </div>
             </div>
         </GridBackground>
-
-
-
     );
 };

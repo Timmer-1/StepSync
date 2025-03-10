@@ -6,11 +6,32 @@ import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { TextHoverEffect } from "@/app/ui/text-hover-effect";
 import { signup } from '../login/action';
+import OneTapComponent from '../../components/OneTapComponent';
+import { createClient } from '@/utils/supabase/client';
 
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   // TODO: Add a Page to show you signed up and need to verify your email
+
+  const supabase = createClient();
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+      // The user will be redirected to Google's auth page
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+    }
+  };
+
   return (
     <GridBackground>
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -25,7 +46,7 @@ export default function SignUp() {
           {/* Social Sign In */}
           <div className="grid grid-cols-2 gap-4">
             {/* Google Signup Button */}
-            <button className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
+            <button onClick={handleGoogleSignIn} className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
               <svg
                 viewBox="0 0 24 24"
                 className="w-6 h-6 mr-2"
@@ -49,6 +70,7 @@ export default function SignUp() {
                 />
               </svg>
               <span>Login with Google</span>
+              <OneTapComponent />
             </button>
 
             {/* GitHub Signup Button */}
