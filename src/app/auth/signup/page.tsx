@@ -91,7 +91,7 @@ export default function SignUp() {
             </button>
 
             {/* GitHub Signup Button */}
-            <button onClick={handleGoogleSignIn} className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
+            <button onClick={handleGithubSignIn} className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
               <svg
                 viewBox="0 0 24 24"
                 className="w-6 h-6 mr-2"

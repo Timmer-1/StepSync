@@ -31,6 +31,23 @@ export default function SignIn() {
     }
   };
 
+  const handleGithubSignIn = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+      // The user will be redirected to GitHub's auth page
+    }
+    catch (error) {
+      console.error('Error signing in with GitHub:', error);
+    }
+  };
+
   /* 
   TODO List: 
      - Fix Logo
@@ -79,7 +96,7 @@ export default function SignIn() {
 
 
             {/* GitHub Signup Button */}
-            <button className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
+            <button onClick={handleGithubSignIn} className="flex items-center justify-center p-3 border border-gray-600 rounded-lg hover:bg-white/5">
               <svg
                 viewBox="0 0 24 24"
                 className="w-6 h-6 mr-2"
