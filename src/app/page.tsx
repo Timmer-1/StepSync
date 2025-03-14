@@ -5,8 +5,22 @@ import { Shield, Zap, Globe } from 'lucide-react';
 import SpotlightCard from './ui/spotlightcard';
 import GridBackground from './ui/background';
 import Link from 'next/link'
+import { createClient } from '@/utils/supabase/server';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    useEffect(() => {
+        // Check if user is authenticated
+        const checkAuth = async () => {
+            const supabase = await createClient();
+            const { data } = await supabase.auth.getUser();
+            setIsAuthenticated(!!data?.user);
+        };
+        checkAuth();
+    }, []);
+
     return (
         <GridBackground>
             {/* Content Container */}
@@ -51,14 +65,26 @@ export default function Home() {
                     </p>
 
                     <div className="flex justify-center gap-4">
-                        <Link href="/auth/signup">
-                            <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium">
-                                Start Now
-                            </button>
-                        </Link>
-                        <button className="border border-slate-600 px-6 py-3 rounded-lg hover:border-slate-400 font-medium backdrop-blur-sm bg-slate-800/30">
-                            Explore StepSync
-                        </button>
+                        {isAuthenticated ? (
+                            <Link href="/dashboard">
+                                <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium">
+                                    Dashboard
+                                </button>
+                            </Link>
+                        ) : (
+                            <>
+                                <Link href="/auth/login">
+                                    <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium">
+                                        Sign In
+                                    </button>
+                                </Link>
+                                <Link href="/auth/signup">
+                                    <button className="border border-slate-600 px-6 py-3 rounded-lg hover:border-slate-400 font-medium backdrop-blur-sm bg-slate-800/30">
+                                        Explore StepSync
+                                    </button>
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </main>
 
@@ -92,6 +118,6 @@ export default function Home() {
                     </SpotlightCard>
                 </div>
             </div>
-        </GridBackground>
+        </GridBackground >
     );
 };
