@@ -7,7 +7,7 @@ import GridBackground from './ui/background';
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server';
 import { useState, useEffect } from 'react';
-import { testimonials, getFeaturedTestimonials, Testimonial } from './data/testimonials';
+import { getFeaturedTestimonials } from './data/testimonials';
 
 export default function Home() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,7 +42,7 @@ export default function Home() {
                     <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 text-transparent bg-clip-text">
                         StepSync
                     </div>
-                    <div className="hidden md:flex space-x-6">
+                    <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex space-x-8">
                         <a href="#about" className="hover:text-blue-400 transition-colors">About</a>
                         <a href="#products" className="hover:text-blue-400 transition-colors">Products</a>
                         <a href="#resources" className="hover:text-blue-400 transition-colors">Resources</a>
@@ -59,49 +59,70 @@ export default function Home() {
                 </nav>
 
                 {/* Hero Section */}
-                <main className="max-w-6xl mx-auto px-4 py-20 text-center">
-                    <div className="bg-gradient-to-r from-blue-500/20 to-teal-500/20 text-sm px-6 py-2 rounded-full mb-8 inline-block backdrop-blur-sm">
-                        🚀 Trusted by Over 1 Million Users Worldwide
-                    </div>
+                <main className="max-w-6xl mx-auto px-4 py-16">
+                    <div className="flex flex-col items-center">
+                        <div className="bg-gradient-to-r from-blue-500/20 to-teal-500/20 text-sm px-6 py-2 rounded-full mb-8 inline-block backdrop-blur-sm">
+                            🚀 Trusted by Over 1 Million Users Worldwide
+                        </div>
 
-                    <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                        <span className="text-white">Stay Alive,</span>
-                        <br />
-                        <span className="bg-gradient-to-r from-blue-400 via-teal-400 to-blue-500 text-transparent bg-clip-text">
-                            Stay Connected
-                        </span>
-                    </h1>
+                        <h1 className="text-5xl md:text-6xl font-bold mb-6 text-center">
+                            <span className="text-white">Stay Alive,</span>
+                            <br />
+                            <span className="bg-gradient-to-r from-blue-400 via-teal-400 to-blue-500 text-transparent bg-clip-text">
+                                Stay Connected
+                            </span>
+                        </h1>
 
-                    <p className="text-slate-300 max-w-2xl mx-auto mb-12 text-lg">
-                        Crush your fitness goals while keeping friends and family in the loop. Track workouts, monitor nutrition, and join challenges—all in one seamless app designed to make health and wellness fun, engaging, and rewarding.
-                    </p>
+                        <p className="text-slate-300 max-w-2xl mx-auto mb-8 text-lg text-center">
+                            Crush your fitness goals while keeping friends and family in the loop. Track workouts, monitor nutrition, and join challenges—all in one seamless app designed to make health and wellness fun, engaging, and rewarding.
+                        </p>
 
-                    <div className="flex justify-center gap-4">
-                        {isAuthenticated ? (
-                            <Link href="/dashboard">
-                                <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium">
-                                    Dashboard
-                                </button>
-                            </Link>
-                        ) : (
-                            <>
-                                <Link href="/auth/login">
+                        <div className="flex justify-center gap-4 mb-12">
+                            {isAuthenticated ? (
+                                <Link href="/dashboard">
                                     <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium">
-                                        Sign In
+                                        Dashboard
                                     </button>
                                 </Link>
-                                <Link href="/auth/signup">
-                                    <button className="border border-slate-600 px-6 py-3 rounded-lg hover:border-slate-400 font-medium backdrop-blur-sm bg-slate-800/30">
-                                        Explore StepSync
-                                    </button>
-                                </Link>
-                            </>
-                        )}
+                            ) : (
+                                <>
+                                    <Link href="/auth/login">
+                                        <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-6 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium">
+                                            Sign In
+                                        </button>
+                                    </Link>
+                                    <Link href="/auth/signup">
+                                        <button className="border border-slate-600 px-6 py-3 rounded-lg hover:border-slate-400 font-medium backdrop-blur-sm bg-slate-800/30">
+                                            Explore StepSync
+                                        </button>
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Hero Image */}
+                        <div className="w-full max-w-4xl mx-auto relative">
+                            {/* Glow effect */}
+                            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 via-teal-400/20 to-blue-500/20 blur-xl rounded-2xl"></div>
+
+                            {/* Image container with styling */}
+                            <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 shadow-2xl">
+                                <img
+                                    src="/run.png"
+                                    alt="StepSync Fitness App"
+                                    className="w-full h-auto object-cover"
+                                />
+
+                                {/* Overlay gradient for better text contrast */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-2xl"></div>
+
+                            </div>
+                        </div>
                     </div>
                 </main>
 
                 {/* Features Grid */}
-                <div className="max-w-6xl mx-auto px-2 py-20 grid md:grid-cols-3 gap-8">
+                < div className="max-w-6xl mx-auto px-2 py-20 grid md:grid-cols-3 gap-8" >
                     <SpotlightCard className="p-6 rounded-xl ">  {/*custom-spotlight-card spotlightColor="rgba(0, 229, 255, 0.2)*/}
                         <Users className="w-12 h-12 text-blue-400 mb-4" />
                         <h3 className="text-xl font-semibold mb-2">Social Connectivity</h3>
@@ -149,10 +170,10 @@ export default function Home() {
                             Join a vibrant community of fitness enthusiasts. Share tips, ask questions, and find inspiration from others.
                         </p>
                     </SpotlightCard>
-                </div>
+                </div >
 
                 {/* Testimonials Section */}
-                <div className="max-w-6xl mx-auto px-4 py-16">
+                < div className="max-w-6xl mx-auto px-4 py-16" >
                     <div className="text-center mb-14">
                         <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Users Say</h2>
                         <p className="text-slate-300 max-w-2xl mx-auto">
@@ -201,10 +222,10 @@ export default function Home() {
                             <p className="text-sm text-slate-400 mt-4">No credit card required. 14-day free trial.</p>
                         </div>
                     </div>
-                </div>
+                </div >
 
                 {/* Footer */}
-                <footer className="border-t border-slate-800 mt-16">
+                < footer className="border-t border-slate-800 mt-16" >
                     <div className="max-w-6xl mx-auto px-4 py-12">
                         <div className="grid md:grid-cols-4 gap-8">
                             <div>
@@ -245,8 +266,8 @@ export default function Home() {
                             <p className="text-slate-500 text-sm text-center">© 2025 StepSync. All rights reserved.</p>
                         </div>
                     </div>
-                </footer>
-            </div>
+                </footer >
+            </div >
         </GridBackground >
     );
 };
