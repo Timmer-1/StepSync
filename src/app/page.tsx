@@ -121,6 +121,19 @@ export default function Home() {
                     </div>
                 </main>
 
+                {/* Features Introduction */}
+                <div className="max-w-4xl mx-auto px-4 pt-8 pb-4 text-center">
+                    <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 text-transparent bg-clip-text mb-4">
+                        The Complete Fitness Experience
+                    </h2>
+                    <p className="text-slate-300 text-lg max-w-3xl mx-auto">
+                        StepSync brings together powerful features designed to revolutionize how you track, share, and experience your fitness journey. Our innovative platform combines cutting-edge technology with human connection to create the ultimate wellness companion.
+                    </p>
+                    <div className="mt-8 mb-2 flex justify-center">
+                        <div className="h-1 w-24 bg-gradient-to-r from-blue-500 to-teal-400 rounded-full"></div>
+                    </div>
+                </div>
+
                 {/* Features Grid */}
                 < div className="max-w-6xl mx-auto px-2 py-20 grid md:grid-cols-3 gap-8" >
                     <SpotlightCard className="p-6 rounded-xl ">  {/*custom-spotlight-card spotlightColor="rgba(0, 229, 255, 0.2)*/}

@@ -60,7 +60,7 @@ const OneTapComponent = () => {
                     console.error('Error getting session', error)
                 }
                 if (data.session) {
-                    router.push('/')
+                    router.push('/dashboard')
                     return
                 }
 

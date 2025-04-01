@@ -15,7 +15,7 @@ export async function GET(request: Request) {
         await supabase.auth.exchangeCodeForSession(code);
 
         // Redirect to the home page or dashboard after successful authentication
-        return NextResponse.redirect(new URL('/', requestUrl.origin));
+        return NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
     }
 
     // If there's no code, redirect to the login page
