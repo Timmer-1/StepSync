@@ -10,7 +10,6 @@ import { createClient } from '@/utils/supabase/client';
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
   const supabase = createClient();
@@ -185,10 +184,11 @@ export default function SignIn() {
           <p className="text-center text-sm text-gray-400">
             Don't have an account?{' '}
             <button
-              onClick={() => setIsSignUp(!isSignUp)}
               className="text-green-400 hover:text-green-300 font-medium"
             >
-              {isSignUp ? 'Sign In' : 'Sign Up'}
+              <Link href="/auth/signup">
+                Sign up
+              </Link>
             </button>
           </p>
         </div>

@@ -2,22 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL')
-}
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY')
-}
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import { createClient } from '@/utils/supabase/server'
 
 
 export async function login(formData: FormData) {
+    // Get the cookie-aware Supabase client
+    const supabase = await createClient()
+
     // Validate inputs
     const email = formData.get('email')
     const password = formData.get('password')
@@ -36,21 +27,24 @@ export async function login(formData: FormData) {
 
 
     if (error) {
-        redirect('/error')
+        console.error('Supabase login error:', error.message);
+        return redirect(`/error?message=${encodeURIComponent(error.message)}`)
     }
 
-    revalidatePath('/', 'layout')
-    redirect('/')
+    revalidatePath('/') // Revalidate and redirect upon success
+    redirect('/dashboard') // Redirect to home page or dashboard after successful login
 }
 
 export async function signup(formData: FormData) {
-    // type-casting here for convenience
-    // in practice, you should validate your inputs
+    const supabase = await createClient()
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const displayname = formData.get('displayname') as string;
 
-    // TODO: Fix Display Name
+    if (!email || !password || !displayname) {
+        return redirect('/error?message=Missing sign up information')
+    }
+
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -60,9 +54,10 @@ export async function signup(formData: FormData) {
     });
 
     if (error) {
-        redirect('/error')
+        console.error('Supabase signup error:', error.message);
+        return redirect(`/error?message=${encodeURIComponent(error.message)}`)
     }
 
-    revalidatePath('/', 'layout')
+    revalidatePath('/')
     redirect('/dashboard')
 }

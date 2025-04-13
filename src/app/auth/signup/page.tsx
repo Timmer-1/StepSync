@@ -117,7 +117,7 @@ export default function SignUp() {
               </label>
               <input
                 id="name"
-                name="name"
+                name="displayname"
                 type="text"
                 className="w-full px-4 py-3 bg-white/5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
                 placeholder="Enter your name"

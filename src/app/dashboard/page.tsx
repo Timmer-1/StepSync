@@ -35,12 +35,12 @@ export default function Dashboard() {
             const { data: { user }, error } = await supabase.auth.getUser();
 
             // Check if the user is authenticated, Keep this commented temporarily.
-            /* if (error || !user) {
+            if (error || !user) {
                 console.error('Error fetching user:', error);
                 router.push('/auth/login');
                 return;
             }
-            */
+
 
             // If we have a user, set the user data
             setUserData(user);
