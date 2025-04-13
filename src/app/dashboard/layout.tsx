@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import {
     User,
     BarChart,
+    Bell,
     Activity,
     Users,
     Calendar,
-    Bell,
     Settings,
     LogOut,
     Search
@@ -17,6 +17,7 @@ import { usePathname } from 'next/navigation';
 import GridBackground from '@/app/ui/background';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import NotificationBell from '@/app/ui/notifications/notificiationbell';
 
 export default function DashboardLayout({
     children,
@@ -200,10 +201,8 @@ export default function DashboardLayout({
                                 />
                             </div>
 
-                            <Link href="/dashboard/notifications" className="relative">
-                                <Bell className="w-6 h-6" />
-                                <span className="absolute top-0 right-0 w-2 h-2 bg-green-400 rounded-full"></span>
-                            </Link>
+
+                            <NotificationBell />
                         </div>
                     </div>
 
