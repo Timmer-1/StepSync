@@ -17,7 +17,7 @@ export async function login(formData: FormData) {
     if (!email || !password ||
         typeof email !== 'string' ||
         typeof password !== 'string') {
-        throw new Error('Invalid form data')
+        return { error: 'Invalid form data' }
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -25,14 +25,14 @@ export async function login(formData: FormData) {
         password
     })
 
-
+    // If there's an error (e.g. invalid password), return the error message
     if (error) {
-        console.error('Supabase login error:', error.message);
-        return redirect(`/error?message=${encodeURIComponent(error.message)}`)
+        console.error('Supabase login error:', error.message)
+        return { error: 'Invalid credentials' }
     }
 
     revalidatePath('/') // Revalidate and redirect upon success
-    redirect('/dashboard') // Redirect to home page or dashboard after successful login
+    return { success: true }
 }
 
 export async function signup(formData: FormData) {
@@ -49,7 +49,7 @@ export async function signup(formData: FormData) {
         email,
         password,
         options: {
-            data: { displayname },
+            data: { displayname: displayname },
         },
     });
 
