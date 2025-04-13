@@ -6,8 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 
 
 export async function login(formData: FormData) {
-    // Get the cookie-aware Supabase client
-    const supabase = await createClient()
+    const supabase = await createClient() // Get the cookie-aware Supabase client
 
     // Validate inputs
     const email = formData.get('email')
@@ -37,12 +36,24 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
     const supabase = await createClient()
+
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const displayname = formData.get('displayname') as string;
 
     if (!email || !password || !displayname) {
         return redirect('/error?message=Missing sign up information')
+    }
+
+    // Let's first check if a user with this email already exists
+    const { data: existingUsers } = await supabase
+        .from('auth.users')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+    if (existingUsers) {
+        return { error: 'An account with this email already exists' }
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -55,9 +66,25 @@ export async function signup(formData: FormData) {
 
     if (error) {
         console.error('Supabase signup error:', error.message);
-        return redirect(`/error?message=${encodeURIComponent(error.message)}`)
+        // Check for various forms of duplicate email errors
+        if (error.message.toLowerCase().includes('already registered') ||
+            error.message.toLowerCase().includes('already exists') ||
+            error.message.toLowerCase().includes('duplicate')) {
+            return { error: 'An account with this email already exists' }
+        }
+
+        // Critical errors that require redirect
+        if (error.status === 500 || error.message.includes('critical')) {
+            return redirect(`/error?message=${encodeURIComponent(error.message)}`)
+        }
+
+        return { error: error.message }
     }
 
-    revalidatePath('/')
-    redirect('/dashboard')
+    // If it's a new sign up that requires email confirmation
+    if (data?.user?.identities?.length === 0) {
+        return { success: true, message: 'Please check your email to confirm your account' }
+    }
+
+    return { success: true }
 }

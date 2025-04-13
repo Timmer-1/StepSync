@@ -12,6 +12,8 @@ import { createClient } from '@/utils/supabase/client';
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
   // TODO: Add a Page to show you signed up and need to verify your email
 
   const supabase = createClient();
@@ -49,6 +51,23 @@ export default function SignUp() {
     }
   };
 
+  const handleFormAction = async (formData: FormData) => {
+    setFormError(null);
+    setFormSuccess(null);
+
+    const result = await signup(formData);
+
+    if ('error' in result && result.error) {
+      setFormError(result.error);
+    } else if ('success' in result && result.success) {
+      if (result.message) {
+        setFormSuccess(result.message);
+      } else {
+        setFormSuccess('Account created successfully!');
+      }
+    }
+  };
+
   return (
     <GridBackground>
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -59,6 +78,19 @@ export default function SignUp() {
             <h2 className="text-2xl font-bold"> Create your account</h2>
             <p className="text-gray-400 mt-2">Please enter your details to create an account.</p>
           </div>
+
+          {/* Error/Success Messages */}
+          {formError && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded">
+              {formError}
+            </div>
+          )}
+
+          {formSuccess && (
+            <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 rounded">
+              {formSuccess}
+            </div>
+          )}
 
           {/* Social Sign In */}
           <div className="grid grid-cols-2 gap-4">
@@ -110,7 +142,7 @@ export default function SignUp() {
           </div>
 
           {/* Sign Up Form */}
-          <form action={signup} className="space-y-6">
+          <form action={handleFormAction} className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-2">
                 Full Name
