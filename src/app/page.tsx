@@ -7,11 +7,15 @@ import GridBackground from './ui/background';
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server';
 import { useState, useEffect } from 'react';
-import { getFeaturedTestimonials } from './data/testimonials';
+import { getFeaturedTestimonials, Testimonial } from './data/testimonials';
 
 export default function Home() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const displayedTestimonials = getFeaturedTestimonials(3);
+    const [displayedTestimonials, setDisplayedTestimonials] = useState<Testimonial[]>([]);
+
+    useEffect(() => {
+        setDisplayedTestimonials(getFeaturedTestimonials(3));
+    }, []);
 
     useEffect(() => {
         // Check if user is authenticated

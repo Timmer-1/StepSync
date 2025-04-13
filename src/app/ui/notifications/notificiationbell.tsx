@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, Check, Trash2, Star, User, FileText, Calendar, Settings } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import NotificationModal from './notificationmodal'; // Import the modal
 import { Notification } from './notificationslist'; // Import the type
 

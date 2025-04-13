@@ -58,15 +58,15 @@ export default function CalendarPage() {
     ]);
 
     // Calendar helper functions
-    const getDaysInMonth = (date: Date) => {
+    const getDaysInMonth = (date: any) => {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     };
 
-    const getFirstDayOfMonth = (date: Date) => {
+    const getFirstDayOfMonth = (date: any) => {
         return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     };
 
-    const getPreviousDays = (date: Date) => {
+    const getPreviousDays = (date: any) => {
         const firstDay = getFirstDayOfMonth(date);
         const prevMonthDays = [];
 
@@ -224,7 +224,7 @@ export default function CalendarPage() {
     );
 
     // Handle form input changes
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleInputChange = (e: any) => {
         const { name, value } = e.target;
         setNewEvent(prev => ({
             ...prev,
@@ -257,7 +257,7 @@ export default function CalendarPage() {
     };
 
     // Handle event deletion
-    const handleDeleteEvent = (id: number) => {
+    const handleDeleteEvent = (id: any) => {
         setEvents(events.filter(event => event.id !== id));
     };
 
