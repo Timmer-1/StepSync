@@ -17,6 +17,7 @@ export default function CalendarPage() {
         participants: 0
     });
 
+
     // Mock events data
     const [events, setEvents] = useState([
         {

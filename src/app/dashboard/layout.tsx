@@ -2,22 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    User,
-    BarChart,
-    Bell,
-    Activity,
-    Users,
-    Calendar,
-    Settings,
-    LogOut,
     Search
 } from 'lucide-react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import GridBackground from '@/app/ui/background';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import NotificationBell from '@/app/ui/notifications/notificiationbell';
+import Sidebar from '../ui/sidebar';
+
+const PAGE_TITLES: Record<string, string> = {
+    '/dashboard': 'Dashboard Overview',
+    '/dashboard/activity': 'Your Activity',
+    '/dashboard/social': 'Social Connections',
+    '/dashboard/calendar': 'Fitness Calendar',
+    '/dashboard/notification': 'Notifications',
+    '/dashboard/profile': 'Your Profile',
+    '/dashboard/settings': 'Account Settings'
+};
 
 export default function DashboardLayout({
     children,
@@ -59,15 +61,9 @@ export default function DashboardLayout({
         router.push('/');
     };
 
-    // Function to check if a link is active
-    const isActive = (path: string) => {
-        if (path === '/dashboard' && pathname === '/dashboard') {
-            return true;
-        }
-        if (path !== '/dashboard' && pathname.startsWith(path)) {
-            return true;
-        }
-        return false;
+    // Get the current page title
+    const getPageTitle = () => {
+        return PAGE_TITLES[pathname] || 'Dashboard';
     };
 
     if (loading) {
@@ -82,113 +78,16 @@ export default function DashboardLayout({
 
     return (
         <GridBackground>
-            <div className="min-h-screen flex flex-col md:flex-row">
+            <div className="min-h-screen flex">
                 {/* Sidebar */}
-                <div className="w-full md:w-64 bg-black/30 backdrop-blur-md border-r border-slate-700/50">
-                    <div className="p-4 border-b border-slate-700/50">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 text-transparent bg-clip-text">
-                            StepSync
-                        </h1>
-                    </div>
-
-                    <div className="p-4 border-b border-slate-700/50">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 flex items-center justify-center">
-                                {userData?.user_metadata?.name ? userData.user_metadata.name.charAt(0) : userData?.email?.charAt(0)}
-                            </div>
-                            <div>
-                                <p className="font-medium">{userData?.user_metadata?.name || userData?.email?.split('@')[0]}</p>
-                                <p className="text-xs text-slate-400">{userData?.email}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <nav className="p-4">
-                        <ul className="space-y-2">
-                            <li>
-                                <Link
-                                    href="/dashboard"
-                                    className={`w-full flex items-center space-x-3 p-2 rounded-lg ${isActive('/dashboard') ? 'bg-slate-700/50 text-green-400' : 'hover:bg-slate-700/30'}`}
-                                >
-                                    <BarChart className="w-5 h-5" />
-                                    <span>Overview</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/dashboard/activity"
-                                    className={`w-full flex items-center space-x-3 p-2 rounded-lg ${isActive('/dashboard/activity') ? 'bg-slate-700/50 text-green-400' : 'hover:bg-slate-700/30'}`}
-                                >
-                                    <Activity className="w-5 h-5" />
-                                    <span>Activity</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/dashboard/social"
-                                    className={`w-full flex items-center space-x-3 p-2 rounded-lg ${isActive('/dashboard/social') ? 'bg-slate-700/50 text-green-400' : 'hover:bg-slate-700/30'}`}
-                                >
-                                    <Users className="w-5 h-5" />
-                                    <span>Social</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/dashboard/calendar"
-                                    className={`w-full flex items-center space-x-3 p-2 rounded-lg ${isActive('/dashboard/calendar') ? 'bg-slate-700/50 text-green-400' : 'hover:bg-slate-700/30'}`}
-                                >
-                                    <Calendar className="w-5 h-5" />
-                                    <span>Calendar</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/dashboard/notification"
-                                    className={`w-full flex items-center space-x-3 p-2 rounded-lg ${isActive('/dashboard/notifications') ? 'bg-slate-700/50 text-green-400' : 'hover:bg-slate-700/30'}`}
-                                >
-                                    <Bell className="w-5 h-5" />
-                                    <span>Notifications</span>
-                                </Link>
-                            </li>
-                        </ul>
-
-                        <div className="mt-8 pt-4 border-t border-slate-700/50">
-                            <ul className="space-y-2">
-                                <li>
-                                    <Link
-                                        href="/dashboard/settings"
-                                        className={`w-full flex items-center space-x-3 p-2 rounded-lg ${isActive('/dashboard/settings') ? 'bg-slate-700/50 text-green-400' : 'hover:bg-slate-700/30'}`}
-                                    >
-                                        <Settings className="w-5 h-5" />
-                                        <span>Settings</span>
-                                    </Link>
-                                </li>
-                                <li>
-                                    <button
-                                        onClick={handleSignOut}
-                                        className="w-full flex items-center space-x-3 p-2 rounded-lg text-red-400 hover:bg-slate-700/30"
-                                    >
-                                        <LogOut className="w-5 h-5" />
-                                        <span>Sign Out</span>
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-                    </nav>
-                </div>
+                <Sidebar userData={userData} onSignOut={handleSignOut} />
 
                 {/* Main Content */}
-                <div className="flex-1 overflow-auto">
+                <div className="ml-64 flex-1 overflow-auto">
                     {/* Top Bar */}
                     <div className="p-4 border-b border-slate-700/50 flex justify-between items-center backdrop-blur-md bg-black/30 sticky top-0 z-10">
                         <h2 className="text-xl font-semibold">
-                            {pathname === '/dashboard' && 'Dashboard Overview'}
-                            {pathname === '/dashboard/activity' && 'Your Activity'}
-                            {pathname === '/dashboard/social' && 'Social Connections'}
-                            {pathname === '/dashboard/calendar' && 'Fitness Calendar'}
-                            {pathname === '/dashboard/notifications' && 'Notifications'}
-                            {pathname === '/dashboard/profile' && 'Your Profile'}
-                            {pathname === '/dashboard/settings' && 'Account Settings'}
+                            {getPageTitle()}
                         </h2>
 
                         <div className="flex items-center space-x-4">
@@ -200,7 +99,6 @@ export default function DashboardLayout({
                                     className="pl-10 pr-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-green-400"
                                 />
                             </div>
-
 
                             <NotificationBell />
                         </div>

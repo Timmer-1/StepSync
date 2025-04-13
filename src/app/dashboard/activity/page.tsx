@@ -6,8 +6,10 @@ import GridBackground from '@/app/ui/background';
 import SpotlightCard from '@/app/ui/spotlightcard';
 import Link from 'next/link';
 
+
 export default function ActivitiesPage() {
     const [selectedFilter, setSelectedFilter] = useState('all');
+
 
     // Mock activity data
     const activities = [
@@ -88,7 +90,9 @@ export default function ActivitiesPage() {
     };
 
     return (
+
         <GridBackground>
+
             <div className="min-h-screen max-w-5xl mx-auto px-4 py-6">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">

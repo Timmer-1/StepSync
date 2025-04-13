@@ -28,8 +28,6 @@ export default function NotificationsList({
     if (notifications.length === 0) {
         return (
             <div className="text-center py-8 px-4">
-                {/* Use a smaller icon for the empty state within the modal */}
-                {/* <Bell className="w-10 h-10 text-gray-500 mx-auto mb-3" /> */}
                 <p className="text-sm text-gray-400">No notifications right now.</p>
             </div>
         );
@@ -52,7 +50,7 @@ export default function NotificationsList({
                         <div className="flex-1 min-w-0">
                             <Link
                                 href={notification.action}
-                                className="font-medium hover:text-green-400 transition-colors block leading-snug" // Improved link styling
+                                className="font-medium hover:text-green-400 transition-colors block leading-snug"
                                 onClick={() => onMarkAsRead(notification.id)} // Mark as read when clicked
                             >
                                 {notification.content}
