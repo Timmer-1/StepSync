@@ -42,20 +42,24 @@ export async function signup(formData: FormData) {
     const displayname = formData.get('displayname') as string;
 
     if (!email || !password || !displayname) {
-        return redirect('/error?message=Missing sign up information')
+        return { error: 'Missing sign up information' }
     }
 
-    // Let's first check if a user with this email already exists
-    const { data: existingUsers } = await supabase
-        .from('auth.users')
-        .select('email')
-        .eq('email', email)
-        .single();
+    // First check with signInWithPassword to see if account exists
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: password + '_check_exists_only' // Intentionally wrong password
+    });
 
-    if (existingUsers) {
-        return { error: 'An account with this email already exists' }
+    // If error doesn't contain "Invalid login credentials", it may be an existing account
+    if (signInError && !signInError.message.includes('Invalid login credentials')) {
+        // Check if the error indicates the account exists
+        if (signInError.message.includes('Email not confirmed')) {
+            return { error: 'An account with this email already exists but hasn\'t been confirmed. Please check your email for the confirmation link.' }
+        }
     }
 
+    // Now attempt to sign up
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -69,22 +73,24 @@ export async function signup(formData: FormData) {
         // Check for various forms of duplicate email errors
         if (error.message.toLowerCase().includes('already registered') ||
             error.message.toLowerCase().includes('already exists') ||
-            error.message.toLowerCase().includes('duplicate')) {
+            error.message.toLowerCase().includes('duplicate') ||
+            error.message.toLowerCase().includes('user already registered')) {
             return { error: 'An account with this email already exists' }
         }
 
-        // Critical errors that require redirect
+        // Critical errors that may require special handling
         if (error.status === 500 || error.message.includes('critical')) {
-            return redirect(`/error?message=${encodeURIComponent(error.message)}`)
+            return { error: `Critical error: ${error.message}` }
         }
 
         return { error: error.message }
     }
 
-    // If it's a new sign up that requires email confirmation
-    if (data?.user?.identities?.length === 0) {
-        return { success: true, message: 'Please check your email to confirm your account' }
+    // Important: Check if this is an existing account
+    // Supabase may return success with identities.length = 0 for existing accounts
+    if (!data.user || !data.user.id || data.user.identities?.length === 0) {
+        return { error: 'An account with this email already exists' }
     }
 
-    return { success: true }
+    return { success: true, message: 'Please check your email to confirm your account' }
 }
