@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Mail } from 'lucide-react';
 import GridBackground from '@/app/ui/background';
 import { TextHoverEffect } from "@/app/ui/text-hover-effect";
 import { login } from './action';
@@ -13,6 +13,7 @@ export default function SignIn() {
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isErrorVisible, setIsErrorVisible] = useState(false);
+  const [isEmailNotConfirmed, setIsEmailNotConfirmed] = useState(false);
   const router = useRouter();
 
   const supabase = createClient();
@@ -53,10 +54,18 @@ export default function SignIn() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setErrorMessage(null)
+    setIsEmailNotConfirmed(false)
     const formData = new FormData(event.currentTarget)
     const response = await login(formData)
+
     if (response.error) {
-      setErrorMessage(response.error)
+      if (response.error === 'email_not_confirmed') {
+        setIsEmailNotConfirmed(true)
+        setIsErrorVisible(true);
+      } else {
+        setErrorMessage(response.error)
+        setIsErrorVisible(true);
+      }
     } else {
       router.push('/dashboard')
     }
@@ -65,7 +74,7 @@ export default function SignIn() {
   useEffect(() => {
     let errorTimeout: NodeJS.Timeout;
 
-    if (errorMessage) {
+    if (errorMessage || isEmailNotConfirmed) {
       setIsErrorVisible(true);
 
       errorTimeout = setTimeout(() => {
@@ -74,6 +83,7 @@ export default function SignIn() {
         // Clear the error message after fade out transition completes
         setTimeout(() => {
           setErrorMessage(null);
+          setIsEmailNotConfirmed(false)
         }, 300); // matches the transition duration
       }, 5000);
     }
@@ -84,7 +94,7 @@ export default function SignIn() {
         clearTimeout(errorTimeout);
       }
     };
-  }, [errorMessage]);
+  }, [errorMessage, isEmailNotConfirmed]); // Fixed dependency array
 
 
   return (
@@ -157,6 +167,20 @@ export default function SignIn() {
               <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
               <p className="text-red-200 font-medium text-sm">
                 {errorMessage === 'Invalid credentials' ? 'Invalid credentials. Please check your email and password.' : errorMessage}
+              </p>
+            </div>
+          )}
+
+          {/* Email Not Confirmed Message */}
+          {isEmailNotConfirmed && (
+            <div
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-yellow-500/20 to-yellow-400/10 border border-yellow-500/50 transform transition-all duration-300 ${isErrorVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+                }`}
+              role="alert"
+            >
+              <Mail className="h-5 w-5 text-yellow-400 flex-shrink-0" />
+              <p className="text-yellow-200 font-medium text-sm">
+                Email not confirmed. Please check your inbox and confirm your email address to sign in.
               </p>
             </div>
           )}

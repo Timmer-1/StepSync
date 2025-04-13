@@ -27,6 +27,11 @@ export async function login(formData: FormData) {
     // If there's an error (e.g. invalid password), return the error message
     if (error) {
         console.error('Supabase login error:', error.message)
+
+        if (error.message.includes('Email not confirmed')) {
+            return { error: 'email_not_confirmed' }
+        }
+
         return { error: 'Invalid credentials' }
     }
 
