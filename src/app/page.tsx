@@ -1,32 +1,27 @@
 'use client'
-
 import React from 'react';
 import { Shield, Zap, Globe, Star, Users, BarChart, MessagesSquare } from 'lucide-react';
 import SpotlightCard from './ui/spotlightcard';
 import GridBackground from './ui/background';
 import Link from 'next/link'
-import { createClient } from '@/utils/supabase/server';
 import { useState, useEffect } from 'react';
 import { getFeaturedTestimonials, Testimonial } from './data/testimonials';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function Home() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [displayedTestimonials, setDisplayedTestimonials] = useState<Testimonial[]>([]);
+    const supabase = createClientComponentClient();
 
     useEffect(() => {
         setDisplayedTestimonials(getFeaturedTestimonials(3));
     }, []);
 
     useEffect(() => {
-        // Check if user is authenticated
-        const checkAuth = async () => {
-            const supabase = await createClient();
-            const { data } = await supabase.auth.getUser();
-            setIsAuthenticated(!!data?.user);
-        };
-        checkAuth();
-    }, []);
-
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setIsAuthenticated(!!user)
+        })
+    }, [supabase])
     // Function to render stars based on rating
     const renderStars = (rating: number) => {
         return Array(5).fill(0).map((_, i) => (

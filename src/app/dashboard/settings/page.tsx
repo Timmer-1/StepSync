@@ -95,19 +95,7 @@ export default function Settings() {
         <GridBackground>
             <div className="min-h-screen">
                 {/* Top Navigation Bar */}
-                <div className="p-4 border-b border-slate-700/50 flex justify-between items-center backdrop-blur-md bg-black/30 sticky top-0 z-10">
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 text-transparent bg-clip-text">
-                        StepSync Settings
-                    </h1>
-                    <button
-                        onClick={() => router.push('/dashboard')}
-                        className="px-4 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
-                    >
-                        Back to Dashboard
-                    </button>
-                </div>
-
-                <div className="container mx-auto py-8 px-4">
+                <div className="container mx-auto py-4 px-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {/* Settings Navigation */}
                         <div className="md:col-span-1">

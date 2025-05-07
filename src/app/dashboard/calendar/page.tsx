@@ -264,16 +264,13 @@ export default function CalendarPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Fitness Calendar</h1>
-                <button
-                    className="flex items-center space-x-2 bg-green-500 hover:bg-green-400 text-gray-900 px-4 py-2 rounded-lg"
-                    onClick={() => setShowAddEventModal(true)}
-                >
-                    <Plus className="w-5 h-5" />
-                    <span>Add Event</span>
-                </button>
-            </div>
+            <button
+                className="flex items-center space-x-2 bg-green-500 hover:bg-green-400 text-gray-900 px-4 py-2 rounded-lg"
+                onClick={() => setShowAddEventModal(true)}
+            >
+                <Plus className="w-5 h-5" />
+                <span>Add Event</span>
+            </button>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Calendar Section */}
