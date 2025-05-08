@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
 import GridBackground from '@/app/ui/background';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import NotificationBell from '@/app/ui/notifications/notificiationbell';
+import NotificationBell from '../ui/notifications/notificationbell';
 import Sidebar from '../ui/sidebar';
 
 const PAGE_TITLES: Record<string, string> = {

@@ -12,14 +12,13 @@ export async function login(formData: FormData) {
     const email = formData.get('email')
     const password = formData.get('password')
 
-
     if (!email || !password ||
         typeof email !== 'string' ||
         typeof password !== 'string') {
         return { error: 'Invalid form data' }
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: { user }, error } = await supabase.auth.signInWithPassword({
         email,
         password
     })
@@ -33,6 +32,39 @@ export async function login(formData: FormData) {
         }
 
         return { error: 'Invalid credentials' }
+    }
+
+    // Ensure user record exists in users table
+    if (user) {
+        const { data: existingUser, error: checkError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', user.id)
+            .single();
+
+        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+            console.error('Error checking existing user:', checkError);
+            return { error: 'Error checking user account' };
+        }
+
+        // Create user record if it doesn't exist
+        if (!existingUser) {
+            const { error: userError } = await supabase
+                .from('users')
+                .insert({
+                    id: user.id,
+                    email: user.email,
+                    first_name: user.user_metadata.first_name || '',
+                    last_name: user.user_metadata.last_name || '',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+
+            if (userError) {
+                console.error('Error creating user record:', userError);
+                return { error: 'Error creating user account' };
+            }
+        }
     }
 
     revalidatePath('/') // Revalidate and redirect upon success
@@ -69,7 +101,10 @@ export async function signup(formData: FormData) {
         email,
         password,
         options: {
-            data: { displayname: displayname },
+            data: {
+                first_name: displayname.split(' ')[0],
+                last_name: displayname.split(' ').slice(1).join(' ') || '',
+            },
         },
     });
 
@@ -95,6 +130,39 @@ export async function signup(formData: FormData) {
     // Supabase may return success with identities.length = 0 for existing accounts
     if (!data.user || !data.user.id || data.user.identities?.length === 0) {
         return { error: 'An account with this email already exists' }
+    }
+
+    // Check if user already exists in users table
+    const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', data.user.id)
+        .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        console.error('Error checking existing user:', checkError);
+        return { error: 'Error checking user account' };
+    }
+
+    // Only create user if they don't exist
+    if (!existingUser) {
+        const { error: userError } = await supabase
+            .from('users')
+            .insert({
+                id: data.user.id,
+                email: email,
+                first_name: displayname.split(' ')[0],
+                last_name: displayname.split(' ').slice(1).join(' ') || '',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            });
+
+        if (userError) {
+            console.error('Error creating user record:', userError);
+            // If we fail to create the user record, we should clean up the auth user
+            await supabase.auth.admin.deleteUser(data.user.id);
+            return { error: 'Error creating user account' };
+        }
     }
 
     return { success: true, message: 'Please check your email to confirm your account' }
