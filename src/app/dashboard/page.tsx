@@ -46,7 +46,7 @@ export default function DashboardOverview() {
             const [sessionsResponse, goalsResponse, friendsResponse] = await Promise.all([
                 supabase
                     .from('workout_sessions')
-                    .select('id, session_date, duration_minutes')
+                    .select('id, session_date, duration_minutes, completed')
                     .eq('user_id', authUser.id)
                     .order('session_date', { ascending: false }),
                 supabase
@@ -252,6 +252,8 @@ export default function DashboardOverview() {
             window.location.reload();
         } catch (err) {
             console.error('Add session error:', err)
+            // Still reload the page even if there's an error
+            window.location.reload();
             throw err // Re-throw to let the UI handle the error
         }
     }
@@ -260,10 +262,14 @@ export default function DashboardOverview() {
 
 
     const todayStr = new Date().toISOString().slice(0, 10)
-    const sessionsToday = sessions.filter(s => s.session_date === todayStr).length
-    const stepsToday = sessions.filter(s => s.session_date === todayStr).length * 1000 // placeholder
-    const caloriesBurned = sessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0) // placeholder MET
-    const activeMins = sessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0)
+    const sessionsToday = sessions.filter(s => s.session_date === todayStr && s.completed).length
+    const stepsToday = sessions.filter(s => s.session_date === todayStr && s.completed).length * 1000 // placeholder
+    const caloriesBurned = sessions
+        .filter(s => s.session_date === todayStr && s.completed)
+        .reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0) // placeholder MET
+    const activeMins = sessions
+        .filter(s => s.session_date === todayStr && s.completed)
+        .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0)
     const distanceKm = (activeMins / 60) * 5 // placeholder
 
     // Calculate goal progress based on the goal type
@@ -274,19 +280,25 @@ export default function DashboardOverview() {
         const goalType = goal.goal.unit;
         let currentValue = 0;
 
-        // Calculate current value based on goal type
+        // Calculate current value based on goal type, only including completed sessions
         switch (goalType) {
             case 'calories':
-                currentValue = caloriesBurned;
+                currentValue = sessions
+                    .filter(s => s.completed)
+                    .reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0);
                 break;
             case 'minutes':
-                currentValue = activeMins;
+                currentValue = sessions
+                    .filter(s => s.completed)
+                    .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
                 break;
             case 'km':
-                currentValue = distanceKm;
+                currentValue = (sessions
+                    .filter(s => s.completed)
+                    .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0) / 60) * 5;
                 break;
             case 'workouts':
-                currentValue = sessionsToday;
+                currentValue = sessions.filter(s => s.completed).length;
                 break;
             default:
                 currentValue = 0;
@@ -315,7 +327,7 @@ export default function DashboardOverview() {
 
     // Get all unique session dates as YYYY-MM-DD strings
     const uniqueSessionDates = Array.from(
-        new Set(sessions.map(s => s.session_date))
+        new Set(sessions.filter(s => s.completed).map(s => s.session_date))
     ).sort((a, b) => b.localeCompare(a)); // Descending
 
     let streak = 0;
@@ -516,7 +528,7 @@ export default function DashboardOverview() {
                                                 target_value: Number(goalInput),
                                                 unit: goalUnit
                                             })
-                                            .eq('id', existingGoal.id);
+                                            .eq('id', existingGoal?.id);
 
                                         if (updateError) {
                                             console.error('Goal update error:', updateError);
