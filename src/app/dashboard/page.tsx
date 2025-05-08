@@ -13,6 +13,10 @@ export default function DashboardOverview() {
     const [loading, setLoading] = useState(true)
     const supabase = createClient()
     const [session, setSession] = useState<any>(null)
+    const [editingGoal, setEditingGoal] = useState(false);
+    const [goalInput, setGoalInput] = useState(goals[0]?.goal.target_value || '');
+    const [goalUnit, setGoalUnit] = useState(goals[0]?.goal.unit || '');
+    const [goalId, setGoalId] = useState(goals[0]?.goal.id || null);
 
     const fetchAll = async () => {
         setLoading(true)
@@ -245,6 +249,7 @@ export default function DashboardOverview() {
             // Refresh sessions to update the UI
             await fetchAll()
             console.log('Dashboard data refreshed')
+            window.location.reload();
         } catch (err) {
             console.error('Add session error:', err)
             throw err // Re-throw to let the UI handle the error
@@ -264,7 +269,25 @@ export default function DashboardOverview() {
         goals.length > 0
             ? Math.round((goals[0].progress_value / goals[0].goal.target_value) * 100)
             : 0
-    const streakDays = sessions.length
+
+    // Get all unique session dates as YYYY-MM-DD strings
+    const uniqueSessionDates = Array.from(
+        new Set(sessions.map(s => s.session_date))
+    ).sort((a, b) => b.localeCompare(a)); // Descending
+
+    let streak = 0;
+    let current = new Date();
+    for (let i = 0; i < uniqueSessionDates.length; i++) {
+        const dateStr = current.toISOString().slice(0, 10);
+        if (uniqueSessionDates.includes(dateStr)) {
+            streak++;
+            // Move to previous day
+            current.setDate(current.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+    const streakDays = streak;
 
     return (
         <div className="space-y-6">
@@ -347,12 +370,72 @@ export default function DashboardOverview() {
                         style={{ width: `${weeklyGoalProgress}%` }}
                     />
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm items-center">
                     <span>{weeklyGoalProgress}% complete</span>
                     <span>
                         Goal: {goals[0]?.goal.target_value} {goals[0]?.goal.unit}
                     </span>
+                    <button
+                        className="ml-4 text-blue-400 hover:text-blue-300 text-xs underline"
+                        onClick={() => {
+                            setEditingGoal(true);
+                            setGoalInput(goals[0]?.goal.target_value || '');
+                            setGoalUnit(goals[0]?.goal.unit || '');
+                            setGoalId(goals[0]?.goal.id || null);
+                        }}
+                    >
+                        Edit
+                    </button>
                 </div>
+                {editingGoal && (
+                    <form
+                        className="mt-4 flex gap-2 items-center"
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (!goalId) return;
+                            const { error } = await supabase
+                                .from('goals')
+                                .update({ target_value: goalInput, unit: goalUnit })
+                                .eq('id', goalId);
+                            if (!error) {
+                                setEditingGoal(false);
+                                await fetchAll();
+                            } else {
+                                alert('Failed to update goal');
+                            }
+                        }}
+                    >
+                        <input
+                            type="number"
+                            value={goalInput}
+                            onChange={e => setGoalInput(e.target.value)}
+                            className="px-2 py-1 rounded border border-slate-600 bg-slate-900 text-white w-24"
+                            min="0"
+                            step="any"
+                            required
+                        />
+                        <input
+                            type="text"
+                            value={goalUnit}
+                            onChange={e => setGoalUnit(e.target.value)}
+                            className="px-2 py-1 rounded border border-slate-600 bg-slate-900 text-white w-16"
+                            required
+                        />
+                        <button
+                            type="submit"
+                            className="px-3 py-1 bg-blue-500 rounded text-white hover:bg-blue-400"
+                        >
+                            Save
+                        </button>
+                        <button
+                            type="button"
+                            className="px-3 py-1 bg-slate-600 rounded text-white hover:bg-slate-500"
+                            onClick={() => setEditingGoal(false)}
+                        >
+                            Cancel
+                        </button>
+                    </form>
+                )}
             </SpotlightCard>
 
             {/* Your Connections */}
