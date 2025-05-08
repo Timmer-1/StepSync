@@ -265,10 +265,53 @@ export default function DashboardOverview() {
     const caloriesBurned = sessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0) // placeholder MET
     const activeMins = sessions.reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0)
     const distanceKm = (activeMins / 60) * 5 // placeholder
-    const weeklyGoalProgress =
-        goals.length > 0
-            ? Math.round((goals[0].progress_value / goals[0].goal.target_value) * 100)
-            : 0
+
+    // Calculate goal progress based on the goal type
+    const calculateGoalProgress = () => {
+        if (goals.length === 0) return 0;
+
+        const goal = goals[0];
+        const goalType = goal.goal.unit;
+        let currentValue = 0;
+
+        // Calculate current value based on goal type
+        switch (goalType) {
+            case 'calories':
+                currentValue = caloriesBurned;
+                break;
+            case 'minutes':
+                currentValue = activeMins;
+                break;
+            case 'km':
+                currentValue = distanceKm;
+                break;
+            case 'workouts':
+                currentValue = sessionsToday;
+                break;
+            default:
+                currentValue = 0;
+        }
+
+        // Update the progress value in user_goals
+        if (goal.progress_value !== currentValue) {
+            supabase
+                .from('user_goals')
+                .update({ progress_value: currentValue })
+                .eq('goal_id', goal.goal.id)
+                .eq('user_id', user?.id)
+                .then(({ error }) => {
+                    if (error) {
+                        console.error('Error updating goal progress:', error);
+                    }
+                });
+        }
+
+        // Cap the progress at 100%
+        return Math.min(Math.round((currentValue / goal.goal.target_value) * 100), 100);
+    };
+
+    const weeklyGoalProgress = calculateGoalProgress();
+    const isGoalCompleted = weeklyGoalProgress >= 100;
 
     // Get all unique session dates as YYYY-MM-DD strings
     const uniqueSessionDates = Array.from(
@@ -363,20 +406,13 @@ export default function DashboardOverview() {
 
             {/* Weekly Goal Progress */}
             <SpotlightCard className="p-6 rounded-xl">
-                <h3 className="text-lg font-semibold mb-4">Weekly Goal Progress</h3>
-                <div className="w-full bg-slate-700/50 rounded-full h-4 mb-2">
-                    <div
-                        className="bg-gradient-to-r from-blue-500 to-teal-400 h-4 rounded-full"
-                        style={{ width: `${weeklyGoalProgress}%` }}
-                    />
-                </div>
-                <div className="flex justify-between text-sm items-center">
-                    <span>{weeklyGoalProgress}% complete</span>
-                    <span>
-                        Goal: {goals[0]?.goal.target_value} {goals[0]?.goal.unit}
-                    </span>
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 className="text-lg font-semibold">Weekly Goal Progress</h3>
+                        <p className="text-sm text-slate-400">Track your weekly fitness goals</p>
+                    </div>
                     <button
-                        className="ml-4 text-blue-400 hover:text-blue-300 text-xs underline"
+                        className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
                         onClick={() => {
                             setEditingGoal(true);
                             setGoalInput(goals[0]?.goal.target_value || '');
@@ -384,59 +420,258 @@ export default function DashboardOverview() {
                             setGoalId(goals[0]?.goal.id || null);
                         }}
                     >
-                        Edit
+                        {goals.length > 0 ? 'Edit Goal' : 'Set Goal'}
                     </button>
                 </div>
-                {editingGoal && (
-                    <form
-                        className="mt-4 flex gap-2 items-center"
-                        onSubmit={async (e) => {
-                            e.preventDefault();
-                            if (!goalId) return;
-                            const { error } = await supabase
-                                .from('goals')
-                                .update({ target_value: goalInput, unit: goalUnit })
-                                .eq('id', goalId);
-                            if (!error) {
-                                setEditingGoal(false);
-                                await fetchAll();
-                            } else {
-                                alert('Failed to update goal');
-                            }
-                        }}
-                    >
-                        <input
-                            type="number"
-                            value={goalInput}
-                            onChange={e => setGoalInput(e.target.value)}
-                            className="px-2 py-1 rounded border border-slate-600 bg-slate-900 text-white w-24"
-                            min="0"
-                            step="any"
-                            required
-                        />
-                        <input
-                            type="text"
-                            value={goalUnit}
-                            onChange={e => setGoalUnit(e.target.value)}
-                            className="px-2 py-1 rounded border border-slate-600 bg-slate-900 text-white w-16"
-                            required
-                        />
-                        <button
-                            type="submit"
-                            className="px-3 py-1 bg-blue-500 rounded text-white hover:bg-blue-400"
-                        >
-                            Save
-                        </button>
-                        <button
-                            type="button"
-                            className="px-3 py-1 bg-slate-600 rounded text-white hover:bg-slate-500"
-                            onClick={() => setEditingGoal(false)}
-                        >
-                            Cancel
-                        </button>
-                    </form>
+
+                {goals.length > 0 ? (
+                    <>
+                        <div className="w-full bg-slate-700/50 rounded-full h-4 mb-2 overflow-hidden">
+                            <div
+                                className={`h-4 rounded-full transition-all duration-500 ${isGoalCompleted
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-400 animate-pulse'
+                                    : 'bg-gradient-to-r from-blue-500 to-teal-400'
+                                    }`}
+                                style={{ width: `${weeklyGoalProgress}%` }}
+                            />
+                        </div>
+                        <div className="flex justify-between text-sm items-center">
+                            <span className={`${isGoalCompleted ? 'text-green-400' : 'text-slate-300'}`}>
+                                {isGoalCompleted ? 'Goal Completed! 🎉' : `${weeklyGoalProgress}% complete`}
+                            </span>
+                            <span className="text-slate-300">
+                                {(() => {
+                                    const goal = goals[0];
+                                    const goalType = goal.goal.unit;
+                                    let currentValue = 0;
+
+                                    switch (goalType) {
+                                        case 'calories':
+                                            currentValue = caloriesBurned;
+                                            break;
+                                        case 'minutes':
+                                            currentValue = activeMins;
+                                            break;
+                                        case 'km':
+                                            currentValue = distanceKm;
+                                            break;
+                                        case 'workouts':
+                                            currentValue = sessionsToday;
+                                            break;
+                                        default:
+                                            currentValue = 0;
+                                    }
+
+                                    return `${currentValue} / ${goal.goal.target_value} ${goal.goal.unit}`;
+                                })()}
+                            </span>
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-center py-8 text-slate-400">
+                        <p>No goal set yet. Click "Set Goal" to create your first fitness goal!</p>
+                    </div>
                 )}
             </SpotlightCard>
+
+            {/* Goal Edit Modal */}
+            {editingGoal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md mx-4">
+                        <h3 className="text-xl font-semibold mb-4">Set Your Weekly Goal</h3>
+                        <form
+                            className="space-y-4"
+                            onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!goalId) {
+                                    // Log user authentication status
+                                    const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+                                    console.log('Current user:', currentUser);
+                                    console.log('User error:', userError);
+
+                                    if (!currentUser) {
+                                        alert('You must be logged in to create a goal');
+                                        return;
+                                    }
+
+                                    // First, check if user already has a weekly goal
+                                    const { data: existingGoals, error: checkError } = await supabase
+                                        .from('user_goals')
+                                        .select('goal:goals(*)')
+                                        .eq('user_id', currentUser.id)
+                                        .eq('goals.name', 'Weekly Goal');
+
+                                    if (checkError) {
+                                        console.error('Error checking existing goals:', checkError);
+                                        alert('Error checking existing goals');
+                                        return;
+                                    }
+
+                                    if (existingGoals && existingGoals.length > 0) {
+                                        // Update existing goal
+                                        const existingGoal = existingGoals[0].goal;
+                                        const { error: updateError } = await supabase
+                                            .from('goals')
+                                            .update({
+                                                target_value: Number(goalInput),
+                                                unit: goalUnit
+                                            })
+                                            .eq('id', existingGoal.id);
+
+                                        if (updateError) {
+                                            console.error('Goal update error:', updateError);
+                                            alert('Failed to update goal: ' + updateError.message);
+                                            return;
+                                        }
+
+                                        // Update progress value in user_goals
+                                        const { error: userGoalError } = await supabase
+                                            .from('user_goals')
+                                            .update({ progress_value: 0 })
+                                            .eq('goal_id', existingGoal.id)
+                                            .eq('user_id', currentUser.id);
+
+                                        if (userGoalError) {
+                                            console.error('User goal update error:', userGoalError);
+                                            alert('Failed to update user goal: ' + userGoalError.message);
+                                            return;
+                                        }
+                                    } else {
+                                        // Create new goal with a unique name
+                                        const uniqueName = `Weekly Goal ${new Date().toISOString().slice(0, 10)}`;
+                                        console.log('Creating goal with data:', {
+                                            name: uniqueName,
+                                            target_value: Number(goalInput),
+                                            unit: goalUnit
+                                        });
+
+                                        const { data: newGoal, error: createError } = await supabase
+                                            .from('goals')
+                                            .insert({
+                                                name: uniqueName,
+                                                target_value: Number(goalInput),
+                                                unit: goalUnit
+                                            })
+                                            .select()
+                                            .single();
+
+                                        if (createError) {
+                                            console.error('Goal creation error:', createError);
+                                            console.error('Error details:', {
+                                                code: createError.code,
+                                                message: createError.message,
+                                                details: createError.details,
+                                                hint: createError.hint
+                                            });
+                                            alert('Failed to create goal: ' + createError.message);
+                                            return;
+                                        }
+
+                                        console.log('Goal created successfully:', newGoal);
+
+                                        // Create user_goal entry
+                                        console.log('Creating user_goal with data:', {
+                                            user_id: currentUser.id,
+                                            goal_id: newGoal.id,
+                                            progress_value: 0
+                                        });
+
+                                        const { error: userGoalError } = await supabase
+                                            .from('user_goals')
+                                            .insert({
+                                                user_id: currentUser.id,
+                                                goal_id: newGoal.id,
+                                                progress_value: 0
+                                            });
+
+                                        if (userGoalError) {
+                                            console.error('User goal creation error:', userGoalError);
+                                            console.error('Error details:', {
+                                                code: userGoalError.code,
+                                                message: userGoalError.message,
+                                                details: userGoalError.details,
+                                                hint: userGoalError.hint
+                                            });
+                                            alert('Failed to link goal to user: ' + userGoalError.message);
+                                            return;
+                                        }
+
+                                        console.log('User goal created successfully');
+                                    }
+                                } else {
+                                    // Update existing goal
+                                    const { error } = await supabase
+                                        .from('goals')
+                                        .update({
+                                            target_value: Number(goalInput),
+                                            unit: goalUnit
+                                        })
+                                        .eq('id', goalId);
+
+                                    if (error) {
+                                        console.error('Goal update error:', error);
+                                        alert('Failed to update goal: ' + error.message);
+                                        return;
+                                    }
+                                }
+
+                                setEditingGoal(false);
+                                await fetchAll();
+                            }}
+                        >
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-300">
+                                    Target Value
+                                </label>
+                                <input
+                                    type="number"
+                                    value={goalInput}
+                                    onChange={e => setGoalInput(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-900 text-white"
+                                    min="0"
+                                    step="any"
+                                    required
+                                    placeholder="Enter your target value"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-slate-300">
+                                    Unit
+                                </label>
+                                <select
+                                    value={goalUnit}
+                                    onChange={e => setGoalUnit(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-900 text-white"
+                                    required
+                                >
+                                    <option value="">Select a unit</option>
+                                    <option value="workouts">Workouts</option>
+                                    <option value="minutes">Minutes</option>
+                                    <option value="km">Kilometers</option>
+                                    <option value="calories">Calories</option>
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end space-x-3 mt-6">
+                                <button
+                                    type="button"
+                                    className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                                    onClick={() => setEditingGoal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                >
+                                    {goalId ? 'Update Goal' : 'Create Goal'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Your Connections */}
             <SpotlightCard className="p-6 rounded-xl">
