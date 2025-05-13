@@ -17,6 +17,7 @@ export default function DashboardOverview() {
     const [goalInput, setGoalInput] = useState(goals[0]?.goal.target_value || '');
     const [goalUnit, setGoalUnit] = useState(goals[0]?.goal.unit || '');
     const [goalId, setGoalId] = useState(goals[0]?.goal.id || null);
+    const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
     const fetchAll = async () => {
         setLoading(true)
@@ -250,6 +251,9 @@ export default function DashboardOverview() {
             await fetchAll()
             console.log('Dashboard data refreshed')
             window.location.reload();
+
+            if (createdSession.id) setSelectedSessionId(createdSession.id);
+            return createdSession.id;
         } catch (err) {
             console.error('Add session error:', err)
             // Still reload the page even if there's an error
@@ -261,7 +265,8 @@ export default function DashboardOverview() {
     if (loading) return <div>Loading your dashboard…</div>
 
 
-    const todayStr = new Date().toISOString().slice(0, 10)
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const sessionsToday = sessions.filter(s => s.session_date === todayStr && s.completed).length
     const stepsToday = sessions.filter(s => s.session_date === todayStr && s.completed).length * 1000 // placeholder
     const caloriesBurned = sessions

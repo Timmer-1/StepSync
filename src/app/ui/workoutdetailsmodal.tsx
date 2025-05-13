@@ -30,12 +30,8 @@ export default function WorkoutDetailsModal({ isOpen, onClose, workout, onToggle
     const caloriesBurned = workout.duration_minutes * 8; // Using same MET calculation as dashboard
 
     const handleToggleComplete = () => {
-        if (!workout.completed) {
-            onToggleComplete(workout.id, workout.completed);
-            onClose();
-        } else {
-            onToggleComplete(workout.id, workout.completed);
-        }
+        onToggleComplete(workout.id, workout.completed);
+        onClose();
     };
 
     const handleDelete = async () => {

@@ -193,7 +193,8 @@ export default function ActivitiesPage() {
     };
 
     // Calculate summary statistics
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const sessionsThisWeek = sessions.filter(s => {
         const sessionDate = new Date(s.session_date);
         const today = new Date();
@@ -228,6 +229,26 @@ export default function ActivitiesPage() {
             </GridBackground>
         );
     }
+
+    const formatDateForDisplay = (dateString: string) => {
+        const dateParts = dateString.split('-');
+        // Create a date object with year, month (0-based), and day using local timezone
+        const date = new Date(
+            parseInt(dateParts[0]),
+            parseInt(dateParts[1]) - 1,
+            parseInt(dateParts[2]),
+            12, // Set to noon to avoid timezone issues
+            0,
+            0
+        );
+
+        return date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
 
     return (
         <GridBackground>
@@ -339,12 +360,7 @@ export default function ActivitiesPage() {
                                         <div>
                                             <h3 className="font-medium">Workout Session</h3>
                                             <p className="text-sm text-gray-400">
-                                                {new Date(session.session_date).toLocaleDateString('en-US', {
-                                                    weekday: 'long',
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
+                                                {formatDateForDisplay(session.session_date)}
                                             </p>
                                         </div>
                                     </div>
