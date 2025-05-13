@@ -41,15 +41,10 @@ export default function Home() {
                     <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 text-transparent bg-clip-text">
                         StepSync
                     </div>
-                    <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex space-x-8">
-                        <a href="#about" className="hover:text-blue-400 transition-colors">About</a>
-                        <a href="#products" className="hover:text-blue-400 transition-colors">Products</a>
-                        <a href="#resources" className="hover:text-blue-400 transition-colors">Resources</a>
-                        <a href="#support" className="hover:text-blue-400 transition-colors">Support</a>
-                    </div>
+
                     <div className="space-x-4">
                         <button className="px-4 py-2 hover:text-blue-400 transition-colors">
-                            <Link href="./auth/login">Start Your Free Trial</Link>
+                            <Link href="./auth/signup">Start Your Free Trial</Link>
                         </button>
                         <button className="bg-gradient-to-r from-blue-500 to-teal-400 px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
                             <Link href="./auth/signup">Get Started</Link>

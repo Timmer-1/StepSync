@@ -280,25 +280,31 @@ export default function DashboardOverview() {
         const goalType = goal.goal.unit;
         let currentValue = 0;
 
-        // Calculate current value based on goal type, only including completed sessions
+        // Get current week's start date (Sunday)
+        const today = new Date();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+
+        // Calculate current value based on goal type, only including completed sessions from this week
         switch (goalType) {
             case 'calories':
                 currentValue = sessions
-                    .filter(s => s.completed)
+                    .filter(s => s.completed && new Date(s.session_date) >= weekStart)
                     .reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0);
                 break;
             case 'minutes':
                 currentValue = sessions
-                    .filter(s => s.completed)
+                    .filter(s => s.completed && new Date(s.session_date) >= weekStart)
                     .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
                 break;
             case 'km':
                 currentValue = (sessions
-                    .filter(s => s.completed)
+                    .filter(s => s.completed && new Date(s.session_date) >= weekStart)
                     .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0) / 60) * 5;
                 break;
             case 'workouts':
-                currentValue = sessions.filter(s => s.completed).length;
+                currentValue = sessions.filter(s => s.completed && new Date(s.session_date) >= weekStart).length;
                 break;
             default:
                 currentValue = 0;
