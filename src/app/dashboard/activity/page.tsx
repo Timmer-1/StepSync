@@ -160,11 +160,8 @@ export default function ActivitiesPage() {
                 return;
             }
 
-            // Update local state
+            // Update local state by removing the deleted session
             setSessions(sessions.filter(session => session.id !== sessionId));
-
-            // Refresh the page to update all statistics
-            window.location.reload();
         } catch (err) {
             console.error('Error deleting session:', err);
         }

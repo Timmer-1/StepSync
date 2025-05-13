@@ -39,10 +39,8 @@ export default function WorkoutDetailsModal({ isOpen, onClose, workout, onToggle
     };
 
     const handleDelete = async () => {
-        if (window.confirm('Are you sure you want to delete this workout session? This action cannot be undone.')) {
-            onDelete?.(workout.id);
-            onClose();
-        }
+        onDelete?.(workout.id);
+        onClose();
     };
 
     return (

@@ -46,8 +46,11 @@ const SessionButton: React.FC<SessionButtonProps> = ({
     // Set today's date as default when form opens
     useEffect(() => {
         if (isFormOpen) {
-            const today = new Date().toISOString().split('T')[0];
-            setNewDate(today);
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            setNewDate(`${year}-${month}-${day}`);
         }
     }, [isFormOpen]);
 
@@ -256,8 +259,8 @@ const SessionButton: React.FC<SessionButtonProps> = ({
                                                         key={exercise.id}
                                                         onClick={() => handleExerciseSelect(exercise)}
                                                         className={`text-left p-2 rounded text-sm transition-colors ${isSelected
-                                                                ? 'bg-blue-500/30 border border-blue-500/50'
-                                                                : 'bg-slate-700/50 border border-slate-600 hover:border-slate-500'
+                                                            ? 'bg-blue-500/30 border border-blue-500/50'
+                                                            : 'bg-slate-700/50 border border-slate-600 hover:border-slate-500'
                                                             }`}
                                                         title={exercise.description}
                                                     >
