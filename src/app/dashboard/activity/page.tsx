@@ -123,10 +123,10 @@ export default function ActivitiesPage() {
             // If there are exercises, create the session exercises
             if (sessionData.exercises && sessionData.exercises.length > 0) {
                 const { error: exercisesError } = await supabase
-                    .from('session_exercises')
+                    .from('workout_session_exercises')
                     .insert(
                         sessionData.exercises.map(exercise => ({
-                            session_id: createdSession.id,
+                            workout_session_id: createdSession.id,
                             exercise_id: exercise.exercise_id,
                             sets: exercise.sets,
                             reps_per_set: exercise.reps_per_set,
@@ -193,13 +193,19 @@ export default function ActivitiesPage() {
                 .delete()
                 .eq('id', sessionId);
 
-            if (sessionError) {
-                console.error('Error deleting session:', sessionError);
-                return;
-            }
-
             // Update local state by removing the deleted session
-            setSessions(sessions.filter(session => session.id !== sessionId));
+            setSessions(prevSessions => {
+                // Make sure we're comparing the same types (both strings)
+                const filteredSessions = prevSessions.filter(session =>
+                    session.id.toString() !== sessionId.toString()
+                );
+                return filteredSessions;
+            });
+
+            // Clear the selected workout if it was the one deleted
+            if (selectedWorkout && selectedWorkout.id.toString() === sessionId.toString()) {
+                setSelectedWorkout(null);
+            }
         } catch (err) {
             console.error('Error deleting session:', err);
         }

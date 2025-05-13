@@ -241,25 +241,44 @@ export default function DashboardOverview() {
 
             // Then, if there are exercises, create the session exercises
             if (sessionInput.exercises && sessionInput.exercises.length > 0) {
-                console.log('Creating session exercises:', sessionInput.exercises)
-                const { error: exercisesError } = await supabase
-                    .from('session_exercises')
-                    .insert(
-                        sessionInput.exercises.map(exercise => ({
-                            session_id: createdSession.id,
-                            exercise_id: exercise.exercise_id,
-                            sets: exercise.sets,
-                            reps_per_set: exercise.reps_per_set,
-                            weight: exercise.weight
-                        }))
-                    )
+                console.log('Raw exercise input:', JSON.stringify(sessionInput.exercises, null, 2));
 
-                if (exercisesError) {
-                    console.error('Exercises creation error:', exercisesError)
-                    throw exercisesError
+                const exerciseData = sessionInput.exercises.map(exercise => ({
+                    workout_session_id: createdSession.id,  // Changed from session_id to workout_session_id
+                    exercise_id: exercise.exercise_id,
+                    sets: Number(exercise.sets),
+                    reps_per_set: Number(exercise.reps_per_set),
+                    weight: Number(exercise.weight)
+                }));
+
+                console.log('Transformed exercise data:', JSON.stringify(exerciseData, null, 2));
+
+                try {
+                    const { data: createdExercises, error: exercisesError } = await supabase
+                        .from('workout_session_exercises')  // Changed from session_exercises to workout_session_exercises
+                        .insert(exerciseData)
+                        .select();
+
+                    if (exercisesError) {
+                        console.error('Exercises creation error:', exercisesError);
+                        console.error('Error details:', {
+                            code: exercisesError.code,
+                            message: exercisesError.message,
+                            details: exercisesError.details,
+                            hint: exercisesError.hint
+                        });
+                        // Log the SQL query that would have been executed
+                        console.error('Failed SQL query would have been:', {
+                            table: 'workout_session_exercises',
+                            data: exerciseData
+                        });
+                    } else {
+                        console.log('Session exercises created successfully:', createdExercises);
+                    }
+                } catch (err) {
+                    console.error('Unexpected error during exercise creation:', err);
+                    console.error('Error stack:', err instanceof Error ? err.stack : 'No stack trace available');
                 }
-
-                console.log('Session exercises created successfully')
             }
 
             // Update local state with new session
@@ -332,6 +351,99 @@ export default function DashboardOverview() {
             throw err // Re-throw to let the UI handle the error
         }
     }
+
+    const handleDeleteSession = async (sessionId: string) => {
+        try {
+            // First delete any associated exercises
+            const { error: exercisesError } = await supabase
+                .from('workout_session_exercises')
+                .delete()
+                .eq('workout_session_id', sessionId);
+
+            if (exercisesError) {
+                console.error('Error deleting session exercises:', exercisesError);
+                throw exercisesError;
+            }
+
+            // Then delete the session
+            const { error: sessionError } = await supabase
+                .from('workout_sessions')
+                .delete()
+                .eq('id', sessionId);
+
+            if (sessionError) {
+                console.error('Error deleting session:', sessionError);
+                throw sessionError;
+            }
+
+            // Update local state by removing the deleted session
+            setSessions(prevSessions => prevSessions.filter(s => s.id !== sessionId));
+
+            // Update goals progress if needed
+            if (goals.length > 0) {
+                const goal = goals[0];
+                const goalType = goal.goal.unit;
+                let currentValue = 0;
+
+                // Get current week's start date (Sunday)
+                const today = new Date();
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                weekStart.setHours(0, 0, 0, 0);
+                const weekStartStr = weekStart.toISOString().split('T')[0];
+
+                // Calculate new progress value with the deleted session removed
+                const remainingSessions = sessions.filter(s => s.id !== sessionId);
+                switch (goalType) {
+                    case 'calories':
+                        currentValue = remainingSessions
+                            .filter(s => s.completed && s.session_date >= weekStartStr)
+                            .reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0);
+                        break;
+                    case 'minutes':
+                        currentValue = remainingSessions
+                            .filter(s => s.completed && s.session_date >= weekStartStr)
+                            .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
+                        break;
+                    case 'km':
+                        currentValue = (remainingSessions
+                            .filter(s => s.completed && s.session_date >= weekStartStr)
+                            .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0) / 60) * 5;
+                        break;
+                    case 'workouts':
+                        currentValue = remainingSessions
+                            .filter(s => s.completed && s.session_date >= weekStartStr)
+                            .length;
+                        break;
+                }
+
+                // Update goal progress in database
+                const { error: updateError } = await supabase
+                    .from('user_goals')
+                    .update({ progress_value: currentValue })
+                    .eq('goal_id', goal.goal.id)
+                    .eq('user_id', user?.id);
+
+                if (updateError) {
+                    console.error('Error updating goal progress:', updateError);
+                } else {
+                    // Update local state with new progress
+                    setGoals(prevGoals => prevGoals.map(g => {
+                        if (g.goal.id === goal.goal.id) {
+                            return {
+                                ...g,
+                                progress_value: currentValue
+                            };
+                        }
+                        return g;
+                    }));
+                }
+            }
+        } catch (err) {
+            console.error('Error in handleDeleteSession:', err);
+            alert('Failed to delete session. Please try again.');
+        }
+    };
 
     if (loading) return <div>Loading your dashboard…</div>
 
