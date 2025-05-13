@@ -5,10 +5,22 @@ import { TrendingUp, Clock, Activity, MessageCircle } from 'lucide-react';
 import SpotlightCard from '@/app/ui/spotlightcard';
 import SessionButton from '@/app/ui/sessionbutton';
 
+interface Goal {
+    id: string;
+    name: string;
+    target_value: number;
+    unit: string;
+}
+
+interface UserGoal {
+    goal: Goal;
+    progress_value: number;
+}
+
 export default function DashboardOverview() {
     const [user, setUser] = useState<{ id: string; email: string; first_name: string } | null>(null)
     const [sessions, setSessions] = useState<any[]>([])
-    const [goals, setGoals] = useState<any[]>([])
+    const [goals, setGoals] = useState<UserGoal[]>([])
     const [friends, setFriends] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const supabase = createClient()
@@ -52,7 +64,7 @@ export default function DashboardOverview() {
                     .order('session_date', { ascending: false }),
                 supabase
                     .from('user_goals')
-                    .select('progress_value, goal:goals ( name, target_value, unit )')
+                    .select('progress_value, goal:goals (id, name, target_value, unit)')
                     .eq('user_id', authUser.id),
                 supabase
                     .from('friendships')
@@ -81,7 +93,10 @@ export default function DashboardOverview() {
             console.log('Fetched friends:', friendsResponse.data)
 
             setSessions(sessionsResponse.data || [])
-            setGoals(goalsResponse.data || [])
+            setGoals((goalsResponse.data || []).map((g: any) => ({
+                progress_value: g.progress_value,
+                goal: g.goal as Goal
+            })))
             setFriends((friendsResponse.data || []).map((r: any) => r.friend))
         } catch (err) {
             console.error('Error in fetchAll:', err)
@@ -247,17 +262,73 @@ export default function DashboardOverview() {
                 console.log('Session exercises created successfully')
             }
 
-            // Refresh sessions to update the UI
-            await fetchAll()
-            console.log('Dashboard data refreshed')
-            window.location.reload();
+            // Update local state with new session
+            setSessions(prevSessions => [createdSession, ...prevSessions]);
+
+            // Update goals progress if needed
+            if (goals.length > 0) {
+                const goal = goals[0];
+                const goalType = goal.goal.unit;
+                let currentValue = 0;
+
+                // Get current week's start date (Sunday)
+                const today = new Date();
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                weekStart.setHours(0, 0, 0, 0);
+                const weekStartStr = weekStart.toISOString().split('T')[0];
+
+                // Calculate new progress value
+                switch (goalType) {
+                    case 'calories':
+                        currentValue = [...sessions, createdSession]
+                            .filter(s => s.completed && s.session_date >= weekStartStr)
+                            .reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0);
+                        break;
+                    case 'minutes':
+                        currentValue = [...sessions, createdSession]
+                            .filter(s => s.completed && s.session_date >= weekStartStr)
+                            .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
+                        break;
+                    case 'km':
+                        currentValue = ([...sessions, createdSession]
+                            .filter(s => s.completed && s.session_date >= weekStartStr)
+                            .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0) / 60) * 5;
+                        break;
+                    case 'workouts':
+                        currentValue = [...sessions, createdSession]
+                            .filter(s => s.completed && s.session_date >= weekStartStr)
+                            .length;
+                        break;
+                }
+
+                // Update goal progress in database
+                const { error: updateError } = await supabase
+                    .from('user_goals')
+                    .update({ progress_value: currentValue })
+                    .eq('goal_id', goal.goal.id)
+                    .eq('user_id', authUser.id);
+
+                if (updateError) {
+                    console.error('Error updating goal progress:', updateError);
+                } else {
+                    // Update local state with new progress
+                    setGoals(prevGoals => prevGoals.map(g => {
+                        if (g.goal.id === goal.goal.id) {
+                            return {
+                                ...g,
+                                progress_value: currentValue
+                            };
+                        }
+                        return g;
+                    }));
+                }
+            }
 
             if (createdSession.id) setSelectedSessionId(createdSession.id);
             return createdSession.id;
         } catch (err) {
             console.error('Add session error:', err)
-            // Still reload the page even if there's an error
-            window.location.reload();
             throw err // Re-throw to let the UI handle the error
         }
     }
@@ -290,26 +361,29 @@ export default function DashboardOverview() {
         const weekStart = new Date(today);
         weekStart.setDate(today.getDate() - today.getDay());
         weekStart.setHours(0, 0, 0, 0);
+        const weekStartStr = weekStart.toISOString().split('T')[0];
 
-        // Calculate current value based on goal type, only including completed sessions from this week
+        // Calculate weekly totals based on goal type
         switch (goalType) {
             case 'calories':
                 currentValue = sessions
-                    .filter(s => s.completed && new Date(s.session_date) >= weekStart)
+                    .filter(s => s.completed && s.session_date >= weekStartStr)
                     .reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0);
                 break;
             case 'minutes':
                 currentValue = sessions
-                    .filter(s => s.completed && new Date(s.session_date) >= weekStart)
+                    .filter(s => s.completed && s.session_date >= weekStartStr)
                     .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
                 break;
             case 'km':
                 currentValue = (sessions
-                    .filter(s => s.completed && new Date(s.session_date) >= weekStart)
+                    .filter(s => s.completed && s.session_date >= weekStartStr)
                     .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0) / 60) * 5;
                 break;
             case 'workouts':
-                currentValue = sessions.filter(s => s.completed && new Date(s.session_date) >= weekStart).length;
+                currentValue = sessions
+                    .filter(s => s.completed && s.session_date >= weekStartStr)
+                    .length;
                 break;
             default:
                 currentValue = 0;
@@ -468,18 +542,34 @@ export default function DashboardOverview() {
                                     const goalType = goal.goal.unit;
                                     let currentValue = 0;
 
+                                    // Get current week's start date (Sunday)
+                                    const today = new Date();
+                                    const weekStart = new Date(today);
+                                    weekStart.setDate(today.getDate() - today.getDay());
+                                    weekStart.setHours(0, 0, 0, 0);
+                                    const weekStartStr = weekStart.toISOString().split('T')[0];
+
+                                    // Calculate weekly totals based on goal type
                                     switch (goalType) {
                                         case 'calories':
-                                            currentValue = caloriesBurned;
+                                            currentValue = sessions
+                                                .filter(s => s.completed && s.session_date >= weekStartStr)
+                                                .reduce((sum, s) => sum + (s.duration_minutes ?? 0) * 8, 0);
                                             break;
                                         case 'minutes':
-                                            currentValue = activeMins;
+                                            currentValue = sessions
+                                                .filter(s => s.completed && s.session_date >= weekStartStr)
+                                                .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0);
                                             break;
                                         case 'km':
-                                            currentValue = distanceKm;
+                                            currentValue = (sessions
+                                                .filter(s => s.completed && s.session_date >= weekStartStr)
+                                                .reduce((sum, s) => sum + (s.duration_minutes ?? 0), 0) / 60) * 5;
                                             break;
                                         case 'workouts':
-                                            currentValue = sessionsToday;
+                                            currentValue = sessions
+                                                .filter(s => s.completed && s.session_date >= weekStartStr)
+                                                .length;
                                             break;
                                         default:
                                             currentValue = 0;
@@ -520,7 +610,7 @@ export default function DashboardOverview() {
                                     // First, check if user already has a weekly goal
                                     const { data: existingGoals, error: checkError } = await supabase
                                         .from('user_goals')
-                                        .select('goal:goals(*)')
+                                        .select('goal:goals(id, name, target_value, unit)')
                                         .eq('user_id', currentUser.id)
                                         .eq('goals.name', 'Weekly Goal');
 
@@ -532,14 +622,14 @@ export default function DashboardOverview() {
 
                                     if (existingGoals && existingGoals.length > 0) {
                                         // Update existing goal
-                                        const existingGoal = existingGoals[0].goal;
+                                        const existingGoal = existingGoals[0].goal as unknown as Goal;
                                         const { error: updateError } = await supabase
                                             .from('goals')
                                             .update({
                                                 target_value: Number(goalInput),
                                                 unit: goalUnit
                                             })
-                                            .eq('id', existingGoal?.id);
+                                            .eq('id', existingGoal.id);
 
                                         if (updateError) {
                                             console.error('Goal update error:', updateError);
@@ -559,6 +649,22 @@ export default function DashboardOverview() {
                                             alert('Failed to update user goal: ' + userGoalError.message);
                                             return;
                                         }
+
+                                        // Update local state instead of reloading
+                                        setGoals(prevGoals => prevGoals.map(g => {
+                                            if (g.goal.id === existingGoal.id) {
+                                                return {
+                                                    ...g,
+                                                    goal: {
+                                                        ...g.goal,
+                                                        target_value: Number(goalInput),
+                                                        unit: goalUnit
+                                                    },
+                                                    progress_value: 0
+                                                };
+                                            }
+                                            return g;
+                                        }));
                                     } else {
                                         // Create new goal with a unique name
                                         const uniqueName = `Weekly Goal ${new Date().toISOString().slice(0, 10)}`;
@@ -619,7 +725,11 @@ export default function DashboardOverview() {
                                             return;
                                         }
 
-                                        console.log('User goal created successfully');
+                                        // Update local state with new goal
+                                        setGoals(prevGoals => [...prevGoals, {
+                                            progress_value: 0,
+                                            goal: newGoal as Goal
+                                        }]);
                                     }
                                 } else {
                                     // Update existing goal

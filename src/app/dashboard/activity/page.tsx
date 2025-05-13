@@ -9,9 +9,18 @@ import { createClient } from '@/utils/supabase/client';
 import WorkoutDetailsModal from '@/app/ui/workoutdetailsmodal';
 import AddSessionModal from '@/app/ui/addsessionmodal';
 
+interface EnhancedSession {
+    id: string;
+    session_date: string;
+    duration_minutes: number;
+    notes: string;
+    completed: boolean;
+    workoutType: string;
+}
+
 export default function ActivitiesPage() {
     const [selectedFilter, setSelectedFilter] = useState('all');
-    const [sessions, setSessions] = useState<any[]>([]);
+    const [sessions, setSessions] = useState<EnhancedSession[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
     const [isAddSessionModalOpen, setIsAddSessionModalOpen] = useState(false);
@@ -26,6 +35,7 @@ export default function ActivitiesPage() {
                 return;
             }
 
+            // First get basic session data
             const { data: sessionsData, error: sessionsError } = await supabase
                 .from('workout_sessions')
                 .select('id, session_date, duration_minutes, notes, completed')
@@ -37,7 +47,35 @@ export default function ActivitiesPage() {
                 return;
             }
 
-            setSessions(sessionsData || []);
+            // Enhanced sessions with workout type
+            const enhancedSessions = [];
+
+            // For each session, fetch associated exercises
+            for (const session of sessionsData || []) {
+                const { data: exercises, error: exercisesError } = await supabase
+                    .from('workout_session_exercises')
+                    .select('exercise_id, exercises:exercise_id(name)')
+                    .eq('workout_session_id', session.id);
+
+                if (exercisesError) {
+                    console.error(`Error fetching exercises for session ${session.id}:`, exercisesError);
+                }
+
+                // Default workout type
+                let workoutType = "Workout Session";
+
+                // If exercises exist, use the first exercise name
+                if (exercises && exercises.length > 0 && exercises[0].exercises && exercises[0].exercises.length > 0) {
+                    workoutType = exercises[0].exercises[0].name;
+                }
+
+                enhancedSessions.push({
+                    ...session,
+                    workoutType
+                });
+            }
+
+            setSessions(enhancedSessions);
         } catch (err) {
             console.error('Error fetching sessions:', err);
         } finally {
@@ -127,7 +165,7 @@ export default function ActivitiesPage() {
 
             // Update local state
             setSessions(sessions.map(session =>
-                session.id === sessionId
+                session.id.toString() === sessionId.toString()
                     ? { ...session, completed: !currentStatus }
                     : session
             ));
@@ -358,7 +396,7 @@ export default function ActivitiesPage() {
                                         </div>
 
                                         <div>
-                                            <h3 className="font-medium">Workout Session</h3>
+                                            <h3 className="font-medium">{session.workoutType}</h3>
                                             <p className="text-sm text-gray-400">
                                                 {formatDateForDisplay(session.session_date)}
                                             </p>
