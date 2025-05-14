@@ -529,13 +529,21 @@ export default function DashboardOverview() {
 
     let streak = 0;
     let current = new Date();
-    for (let i = 0; i < uniqueSessionDates.length; i++) {
-        const dateStr = current.toISOString().slice(0, 10);
-        if (uniqueSessionDates.includes(dateStr)) {
+    current.setHours(0, 0, 0, 0);
+
+    const sortedDates = uniqueSessionDates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+    // Check days consecutively starting from today
+    while (true) {
+        const dateStr = current.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+
+        // Check if this date exists in our completed sessions
+        if (sortedDates.includes(dateStr)) {
             streak++;
             // Move to previous day
             current.setDate(current.getDate() - 1);
         } else {
+            // Chain broken, stop counting
             break;
         }
     }

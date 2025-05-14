@@ -294,6 +294,24 @@ export default function ActivitiesPage() {
         });
     };
 
+    const uniqueSessionDates = Array.from(
+        new Set(sessions.filter(s => s.completed).map(s => s.session_date))
+    ).sort((a, b) => b.localeCompare(a)); // Descending
+
+    let streak = 0;
+    let current = new Date();
+    for (let i = 0; i < uniqueSessionDates.length; i++) {
+        const dateStr = current.toISOString().slice(0, 10);
+        if (uniqueSessionDates.includes(dateStr)) {
+            streak++;
+            // Move to previous day
+            current.setDate(current.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+    const streakDays = streak;
+
     return (
         <GridBackground>
             <div className="min-h-screen max-w-5xl mx-auto px-4 py-6">
