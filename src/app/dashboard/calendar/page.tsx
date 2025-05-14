@@ -33,7 +33,7 @@ export default function CalendarPage() {
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState<any>(null);
     const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
-    const [viewFilter, setViewFilter] = useState('all'); // Added filter state variable
+    const [viewFilter, setViewFilter] = useState('all'); // Filter state variable
     const router = useRouter();
     const supabase = createClient();
 
@@ -161,12 +161,26 @@ export default function CalendarPage() {
         return nextDays;
     };
 
+    // Get filtered workout sessions based on current view filter
+    const getFilteredWorkoutSessions = () => {
+        switch (viewFilter) {
+            case 'completed':
+                return workoutSessions.filter(session => session.completed);
+            case 'upcoming':
+                return workoutSessions.filter(session => !session.completed);
+            case 'all':
+            default:
+                return workoutSessions;
+        }
+    };
+
     const renderCalendar = () => {
         const prevDays = getPreviousDays(currentMonth);
         const currentDays = getCurrentDays(currentMonth);
         const nextDays = getNextDays(currentMonth);
 
         const allDays = [...prevDays, ...currentDays, ...nextDays];
+        const filteredSessions = getFilteredWorkoutSessions();
 
         // Group days into weeks
         const weeks = [];
@@ -180,8 +194,8 @@ export default function CalendarPage() {
                     // Format the date to YYYY-MM-DD for comparison with session_date
                     const formattedDate = day.date.toISOString().split('T')[0];
 
-                    // Check if this day has workout sessions
-                    const daySessions = workoutSessions.filter(
+                    // Check if this day has workout sessions (using filtered sessions)
+                    const daySessions = filteredSessions.filter(
                         session => session.session_date === formattedDate
                     );
 
@@ -259,10 +273,13 @@ export default function CalendarPage() {
         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
     };
 
-    // Get sessions for selected date
-    const selectedDateSessions = workoutSessions.filter(
-        session => session.session_date === selectedDate.toISOString().split('T')[0]
-    );
+    // Get sessions for selected date (filtered by the current filter)
+    const getSelectedDateSessions = () => {
+        const filteredSessions = getFilteredWorkoutSessions();
+        return filteredSessions.filter(
+            session => session.session_date === selectedDate.toISOString().split('T')[0]
+        );
+    };
 
     // Handle adding a new session
     const handleAddSession = async (sessionData: {
@@ -445,6 +462,7 @@ export default function CalendarPage() {
             await fetchWorkoutSessions(userData.id);
         }
     };
+
     // Get filtered upcoming workouts based on current view and month
     const getUpcomingWorkouts = () => {
         // Get today's date at midnight for proper comparison
@@ -486,6 +504,9 @@ export default function CalendarPage() {
         );
     }
 
+    // Get selected date sessions based on current filter
+    const selectedDateSessions = getSelectedDateSessions();
+
     return (
         <div className="space-y-6">
             {/* Header area with title and button */}
@@ -505,7 +526,7 @@ export default function CalendarPage() {
                 <button
                     onClick={() => setViewFilter('all')}
                     className={`px-4 py-2 rounded-lg transition-colors ${viewFilter === 'all'
-                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
+                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
                         : 'bg-white/5 hover:bg-white/10'
                         }`}
                 >
@@ -523,7 +544,7 @@ export default function CalendarPage() {
                 <button
                     onClick={() => setViewFilter('upcoming')}
                     className={`px-4 py-2 rounded-lg transition-colors ${viewFilter === 'upcoming'
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
                         : 'bg-white/5 hover:bg-white/10'
                         }`}
                 >
@@ -534,7 +555,7 @@ export default function CalendarPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Calendar Section */}
                 <div className="lg:col-span-2">
-                    <div className="p-6 rounded-xl backdrop-blur-sm border border-slate-700/50">
+                    <SpotlightCard className="p-6 rounded-xl">
                         {/* Calendar Header */}
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold">{formatMonthYear(currentMonth)}</h2>
@@ -577,6 +598,13 @@ export default function CalendarPage() {
                             </div>
                         </div>
 
+                        {/* Filter description */}
+                        <div className="mb-4 text-sm text-slate-400">
+                            {viewFilter === 'all' && 'Showing all workouts in the calendar'}
+                            {viewFilter === 'completed' && 'Showing only completed workouts in the calendar'}
+                            {viewFilter === 'upcoming' && 'Showing only upcoming workouts in the calendar'}
+                        </div>
+
                         {/* Legend */}
                         <div className="flex flex-wrap gap-4 mt-4 border-t border-slate-700/50 pt-4">
                             <div className="flex items-center">
@@ -588,7 +616,7 @@ export default function CalendarPage() {
                                 <span className="text-sm">Upcoming Workout</span>
                             </div>
                         </div>
-                    </div>
+                    </SpotlightCard>
                 </div>
 
                 {/* Selected Day Details */}
@@ -655,7 +683,13 @@ export default function CalendarPage() {
                         ) : (
                             <div className="text-center py-8">
                                 <div className="bg-slate-800/30 rounded-lg p-6">
-                                    <p className="text-slate-400 mb-4">No workouts scheduled for this day.</p>
+                                    {viewFilter !== 'all' ? (
+                                        <p className="text-slate-400 mb-4">
+                                            No {viewFilter === 'completed' ? 'completed' : 'upcoming'} workouts for this day.
+                                        </p>
+                                    ) : (
+                                        <p className="text-slate-400 mb-4">No workouts scheduled for this day.</p>
+                                    )}
                                     <button
                                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400"
                                         onClick={() => setShowAddWorkoutModal(true)}
