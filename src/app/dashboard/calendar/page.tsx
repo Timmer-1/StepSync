@@ -80,24 +80,9 @@ export default function CalendarPage() {
                 return;
             }
 
-            console.log('Fetched workout sessions:', sessions);
             setWorkoutSessions(sessions || []);
 
-            // For each session, try to fetch associated exercises
-            for (const session of sessions || []) {
-                const { data: exercises, error: exercisesError } = await supabase
-                    .from('workout_session_exercises')
-                    .select('exercise_id, exercises:exercise_id(name, primary_muscle)')
-                    .eq('workout_session_id', session.id);
-
-                if (exercisesError) {
-                    console.error(`Error fetching exercises for session ${session.id}:`, exercisesError);
-                } else {
-                    console.log(`Exercises for session ${session.id}:`, exercises);
-                }
-            }
-
-            // Calculate today's stats
+            // Calculate today's stats correctly
             const today = new Date().toISOString().split('T')[0];
             const todaySessions = (sessions || []).filter(
                 session => session.session_date === today && session.completed
@@ -442,9 +427,15 @@ export default function CalendarPage() {
 
     // Handle session added callback
     const handleSessionAdded = async (duration: number) => {
-        // Update today's stats
-        setTodaySessionsCount(prev => prev + 1);
-        setTodayActiveMinutes(prev => prev + duration);
+        // Update today's stats immediately (optimistic update)
+        const today = new Date().toISOString().split('T')[0];
+        const newSessionDate = selectedDate.toISOString().split('T')[0];
+
+        // Only update today's count if the new session is for today
+        if (newSessionDate === today) {
+            setTodaySessionsCount(prev => prev + 1);
+            setTodayActiveMinutes(prev => prev + duration);
+        }
 
         // Close the modal
         setShowAddWorkoutModal(false);
@@ -454,7 +445,6 @@ export default function CalendarPage() {
             await fetchWorkoutSessions(userData.id);
         }
     };
-
     // Get filtered upcoming workouts based on current view and month
     const getUpcomingWorkouts = () => {
         // Get today's date at midnight for proper comparison
@@ -544,7 +534,7 @@ export default function CalendarPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Calendar Section */}
                 <div className="lg:col-span-2">
-                    <SpotlightCard className="p-6 rounded-xl">
+                    <div className="p-6 rounded-xl backdrop-blur-sm border border-slate-700/50">
                         {/* Calendar Header */}
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold">{formatMonthYear(currentMonth)}</h2>
@@ -598,7 +588,7 @@ export default function CalendarPage() {
                                 <span className="text-sm">Upcoming Workout</span>
                             </div>
                         </div>
-                    </SpotlightCard>
+                    </div>
                 </div>
 
                 {/* Selected Day Details */}
