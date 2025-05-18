@@ -45,6 +45,19 @@ interface FriendRequest {
     created_at: string;
 }
 
+interface FriendshipWithUser {
+    user_id: string;
+    friend_id: string;
+    status: string;
+    created_at: string;
+    users: {
+        id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+    };
+}
+
 export default function SocialPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Friend[]>([]);
@@ -56,6 +69,7 @@ export default function SocialPage() {
     const [userData, setUserData] = useState<any>(null);
     const [activeSection, setActiveSection] = useState('friends');
     const [expandedFriend, setExpandedFriend] = useState<string | null>(null);
+    const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
     const router = useRouter();
     const supabase = createClient();
@@ -83,6 +97,7 @@ export default function SocialPage() {
                 ]);
             } catch (err) {
                 console.error('Error initializing social data:', err);
+                showNotification('error', 'Failed to load your social data');
             } finally {
                 setDataLoading(false);
             }
@@ -90,6 +105,11 @@ export default function SocialPage() {
 
         initialize();
     }, [router]);
+
+    const showNotification = (type: 'success' | 'error', message: string) => {
+        setNotification({ type, message });
+        setTimeout(() => setNotification(null), 5000);
+    };
 
     // Fetch accepted friends
     const fetchFriends = async (userId: string) => {
@@ -149,49 +169,51 @@ export default function SocialPage() {
     // Fetch pending friend requests (where current user is the recipient)
     const fetchPendingRequests = async (userId: string) => {
         try {
-            // Using simpler query structure to avoid potential join issues
-            const { data, error } = await supabase
+            // First get the pending friendships where current user is the recipient
+            const { data: friendships, error: friendshipsError } = await supabase
                 .from('friendships')
-                .select('id, user_id, created_at, status')
+                .select(`
+                    user_id,
+                    friend_id,
+                    status,
+                    created_at,
+                    users:user_id (
+                        id,
+                        first_name,
+                        last_name,
+                        email
+                    )
+                `)
                 .eq('friend_id', userId)
-                .eq('status', 'pending');
+                .eq('status', 'pending')
+                .returns<FriendshipWithUser[]>();
 
-            if (error) throw error;
+            if (friendshipsError) {
+                console.error('Error fetching friendships:', friendshipsError);
+                throw friendshipsError;
+            }
 
-            if (!data || data.length === 0) {
+            if (!friendships || friendships.length === 0) {
                 setPendingRequests([]);
                 return;
             }
 
-            // Get all user IDs from pending requests
-            const userIds = data.map(request => request.user_id);
+            // Map the data to our expected format
+            const formattedRequests = friendships.map(friendship => ({
+                id: `${friendship.user_id}-${friendship.friend_id}`, // Create a unique ID from the composite key
+                created_at: friendship.created_at,
+                sender: {
+                    id: friendship.users.id,
+                    first_name: friendship.users.first_name,
+                    last_name: friendship.users.last_name,
+                    email: friendship.users.email
+                }
+            }));
 
-            // Fetch user details separately
-            const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('id, first_name, last_name, email')
-                .in('id', userIds);
-
-            if (userError) throw userError;
-
-            // Map the user data to the requests
-            const requestsWithUserData = data.map(request => {
-                const sender = userData?.find(user => user.id === request.user_id);
-                return {
-                    id: request.id,
-                    created_at: request.created_at,
-                    sender: sender || {
-                        id: request.user_id,
-                        first_name: 'Unknown',
-                        last_name: 'User',
-                        email: ''
-                    }
-                };
-            });
-
-            setPendingRequests(requestsWithUserData);
+            setPendingRequests(formattedRequests);
         } catch (err) {
             console.error('Error fetching pending requests:', err);
+            showNotification('error', 'Failed to load friend requests');
         }
     };
 
@@ -367,11 +389,15 @@ export default function SocialPage() {
     // Accept a friend request
     const acceptFriendRequest = async (requestId: string) => {
         try {
+            // Split the composite ID back into user_id and friend_id
+            const [userId, friendId] = requestId.split('-');
+
             // Update the friendship status to accepted
             const { error } = await supabase
                 .from('friendships')
                 .update({ status: 'accepted' })
-                .eq('id', requestId);
+                .eq('user_id', userId)
+                .eq('friend_id', friendId);
 
             if (error) throw error;
 
@@ -395,17 +421,22 @@ export default function SocialPage() {
             }
         } catch (err) {
             console.error('Error accepting friend request:', err);
+            showNotification('error', 'Failed to accept friend request');
         }
     };
 
     // Reject/cancel a friend request
     const rejectFriendRequest = async (requestId: string) => {
         try {
+            // Split the composite ID back into user_id and friend_id
+            const [userId, friendId] = requestId.split('-');
+
             // Delete the friendship record
             const { error } = await supabase
                 .from('friendships')
                 .delete()
-                .eq('id', requestId);
+                .eq('user_id', userId)
+                .eq('friend_id', friendId);
 
             if (error) throw error;
 
@@ -413,6 +444,7 @@ export default function SocialPage() {
             setPendingRequests(prev => prev.filter(req => req.id !== requestId));
         } catch (err) {
             console.error('Error rejecting friend request:', err);
+            showNotification('error', 'Failed to reject friend request');
         }
     };
 
@@ -502,14 +534,14 @@ export default function SocialPage() {
             <div className="bg-slate-800/70 p-6 rounded-xl border border-slate-700/50 shadow-lg">
                 <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                     <UserPlus className="w-5 h-5 text-green-400" />
-                    Find Friends
+                    Find New Friends
                 </h2>
 
                 <div className="flex gap-2 mb-6">
                     <div className="relative flex-1">
                         <input
                             type="text"
-                            placeholder="Enter exact email address to find users"
+                            placeholder="Enter email address to find users"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -550,7 +582,7 @@ export default function SocialPage() {
                                                 className="px-3 py-2 bg-green-400 text-gray-900 rounded-lg font-medium hover:bg-green-300 transition-colors flex items-center gap-2"
                                             >
                                                 <UserPlus className="w-4 h-4" />
-                                                Send Request
+                                                Add Friend
                                             </button>
                                         )}
 
@@ -596,7 +628,7 @@ export default function SocialPage() {
                         }`}
                 >
                     <UserCheck className="w-4 h-4" />
-                    <span>Friends ({friends.length})</span>
+                    <span>My Friends ({friends.length})</span>
                 </button>
 
                 <button
@@ -607,7 +639,7 @@ export default function SocialPage() {
                         }`}
                 >
                     <UserPlus className="w-4 h-4" />
-                    <span>Requests ({pendingRequests.length})</span>
+                    <span>Friend Requests ({pendingRequests.length})</span>
                 </button>
 
                 <button
@@ -618,7 +650,7 @@ export default function SocialPage() {
                         }`}
                 >
                     <User className="w-4 h-4" />
-                    <span>Sent ({sentRequests.length})</span>
+                    <span>Sent Requests ({sentRequests.length})</span>
                 </button>
             </div>
 
@@ -629,7 +661,7 @@ export default function SocialPage() {
                     <div>
                         <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                             <Users className="w-5 h-5 text-blue-400" />
-                            Your Friends
+                            My Friends
                         </h2>
 
                         {friends.length > 0 ? (
@@ -719,7 +751,7 @@ export default function SocialPage() {
                                 <Users className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                                 <h3 className="text-xl font-medium mb-2">No friends yet</h3>
                                 <p className="text-slate-400 max-w-md mx-auto mb-4">
-                                    Search for friends above or use the Find Friends button to connect with other users.
+                                    Use the search bar above to find and add friends.
                                 </p>
                             </div>
                         )}
@@ -751,18 +783,18 @@ export default function SocialPage() {
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => acceptFriendRequest(request.id)}
-                                                className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
-                                                title="Accept request"
+                                                className="px-3 py-2 bg-green-400 text-gray-900 rounded-lg font-medium hover:bg-green-300 transition-colors flex items-center gap-2"
                                             >
-                                                <Check className="w-5 h-5" />
+                                                <Check className="w-4 h-4" />
+                                                Accept
                                             </button>
 
                                             <button
                                                 onClick={() => rejectFriendRequest(request.id)}
-                                                className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
-                                                title="Reject request"
+                                                className="px-3 py-2 bg-red-400/20 text-red-400 rounded-lg font-medium hover:bg-red-400/30 transition-colors flex items-center gap-2"
                                             >
-                                                <X className="w-5 h-5" />
+                                                <X className="w-4 h-4" />
+                                                Reject
                                             </button>
                                         </div>
                                     </div>
