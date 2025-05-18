@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { TrendingUp, Clock, Activity, MessageCircle } from 'lucide-react';
 import SpotlightCard from '@/app/ui/spotlightcard';
 import SessionButton from '@/app/ui/sessionbutton';
+import Link from 'next/link';
 
 interface Goal {
     id: string;
@@ -17,11 +18,20 @@ interface UserGoal {
     progress_value: number;
 }
 
+interface FriendStats {
+    id: string;
+    first_name: string;
+    last_name: string;
+    workouts: number;
+    streak: number;
+    averageMinutes: number;
+}
+
 export default function DashboardOverview() {
     const [user, setUser] = useState<{ id: string; email: string; first_name: string } | null>(null)
     const [sessions, setSessions] = useState<any[]>([])
     const [goals, setGoals] = useState<UserGoal[]>([])
-    const [friends, setFriends] = useState<any[]>([])
+    const [friends, setFriends] = useState<FriendStats[]>([])
     const [loading, setLoading] = useState(true)
     const supabase = createClient()
     const [session, setSession] = useState<any>(null)
@@ -30,6 +40,98 @@ export default function DashboardOverview() {
     const [goalUnit, setGoalUnit] = useState(goals[0]?.goal.unit || '');
     const [goalId, setGoalId] = useState(goals[0]?.goal.id || null);
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+    // Add function to calculate streak
+    const calculateStreak = (workoutDates: string[]): number => {
+        if (!workoutDates.length) return 0;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const dates = workoutDates
+            .map(date => new Date(date))
+            .sort((a, b) => b.getTime() - a.getTime());
+
+        let streak = 0;
+        let currentDate = today;
+
+        for (let i = 0; i < dates.length; i++) {
+            const workoutDate = dates[i];
+            workoutDate.setHours(0, 0, 0, 0);
+
+            // If there's a gap of more than 1 day, break the streak
+            if (i > 0) {
+                const prevDate = dates[i - 1];
+                const dayDiff = Math.floor((prevDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
+                if (dayDiff > 1) break;
+            }
+
+            // If the workout was today or yesterday, count it
+            const dayDiff = Math.floor((currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (dayDiff <= 1) {
+                streak++;
+                currentDate = workoutDate;
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    };
+
+    // Add function to fetch workout stats for a friend
+    const fetchFriendStats = async (friendId: string): Promise<FriendStats> => {
+        try {
+            const { data: workouts, error } = await supabase
+                .from('workout_sessions')
+                .select('session_date, duration_minutes')
+                .eq('user_id', friendId)
+                .order('session_date', { ascending: false });
+
+            if (error) throw error;
+
+            if (!workouts || workouts.length === 0) {
+                return {
+                    id: friendId,
+                    first_name: '',
+                    last_name: '',
+                    workouts: 0,
+                    streak: 0,
+                    averageMinutes: 0
+                };
+            }
+
+            // Calculate total workouts
+            const totalWorkouts = workouts.length;
+
+            // Calculate average duration
+            const totalMinutes = workouts.reduce((sum, workout) => sum + (workout.duration_minutes || 0), 0);
+            const averageMinutes = Math.round(totalMinutes / totalWorkouts);
+
+            // Calculate streak
+            const workoutDates = workouts.map(w => w.session_date);
+            const streak = calculateStreak(workoutDates);
+
+            return {
+                id: friendId,
+                first_name: '',
+                last_name: '',
+                workouts: totalWorkouts,
+                streak,
+                averageMinutes
+            };
+        } catch (err) {
+            console.error('Error fetching friend stats:', err);
+            return {
+                id: friendId,
+                first_name: '',
+                last_name: '',
+                workouts: 0,
+                streak: 0,
+                averageMinutes: 0
+            };
+        }
+    };
 
     const fetchAll = async () => {
         setLoading(true)
@@ -97,7 +199,20 @@ export default function DashboardOverview() {
                 progress_value: g.progress_value,
                 goal: g.goal as Goal
             })))
-            setFriends((friendsResponse.data || []).map((r: any) => r.friend))
+
+            // Fetch workout stats for each friend
+            const friendsWithStats = await Promise.all(
+                (friendsResponse.data || []).map(async (r: any) => {
+                    const stats = await fetchFriendStats(r.friend.id);
+                    return {
+                        ...stats,
+                        first_name: r.friend.first_name,
+                        last_name: r.friend.last_name
+                    };
+                })
+            );
+
+            setFriends(friendsWithStats);
         } catch (err) {
             console.error('Error in fetchAll:', err)
             // Set empty arrays on error to prevent undefined states
@@ -707,6 +822,63 @@ export default function DashboardOverview() {
                 )}
             </SpotlightCard>
 
+            {/* Friend Stats Section */}
+            <SpotlightCard className="p-6 rounded-xl">
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 className="text-lg font-semibold">Friend Activity</h3>
+                        <p className="text-sm text-slate-400">Track your friends' workout progress</p>
+                    </div>
+                    <Link href="/dashboard/social">
+                        <button className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors">
+                            View All Friends
+                        </button>
+                    </Link>
+                </div>
+
+                {friends.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {friends.map((friend) => (
+                            <div key={friend.id} className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 flex items-center justify-center text-white">
+                                        {friend.first_name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium">{friend.first_name} {friend.last_name}</p>
+                                        <p className="text-sm text-slate-400">Active Friend</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="bg-slate-900/50 p-2 rounded-lg text-center">
+                                        <p className="text-sm text-slate-400">Workouts</p>
+                                        <p className="font-medium">{friend.workouts}</p>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-2 rounded-lg text-center">
+                                        <p className="text-sm text-slate-400">Streak</p>
+                                        <p className="font-medium">{friend.streak} days</p>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-2 rounded-lg text-center">
+                                        <p className="text-sm text-slate-400">Avg. Min</p>
+                                        <p className="font-medium">{friend.averageMinutes}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-8 text-slate-400">
+                        <p>No friends yet. Add friends to track their progress!</p>
+                        <Link href="/dashboard/social">
+                            <button className="mt-4 px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors">
+                                Find Friends
+                            </button>
+                        </Link>
+                    </div>
+                )}
+            </SpotlightCard>
+
             {/* Goal Edit Modal */}
             {editingGoal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -926,33 +1098,7 @@ export default function DashboardOverview() {
                 </div>
             )}
 
-            {/* Your Connections */}
-            <SpotlightCard className="p-6 rounded-xl">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Your Connections</h3>
-                    <button className="text-sm text-blue-400 hover:text-blue-300">Find Friends</button>
-                </div>
-                <div className="space-y-4">
-                    {friends.map(f => (
-                        <div
-                            key={f.id}
-                            className="flex items-center space-x-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50"
-                        >
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 flex items-center justify-center">
-                                {f.first_name.charAt(0)}
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium">{`${f.first_name} ${f.last_name}`}</p>
-                                <p className="text-sm text-slate-400">Active now</p>
-                            </div>
-                            <button className="p-2 rounded-full hover:bg-slate-700/50">
-                                <MessageCircle className="w-5 h-5" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </SpotlightCard>
-
+            {/* Add Workout Session */}
             <SpotlightCard className="p-6 rounded-xl">
                 <h3 className="text-lg font-semibold mb-4">Add Workout Session</h3>
                 <SessionButton

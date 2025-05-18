@@ -58,11 +58,31 @@ interface FriendshipWithUser {
     };
 }
 
+interface PendingRequest {
+    id: string;
+    created_at: string;
+    sender: {
+        id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+    };
+    user_id: string;  // Add this to store the full UUID
+    friend_id: string; // Add this to store the full UUID
+}
+
+// Add interface for workout stats
+interface WorkoutStats {
+    workouts: number;
+    streak: number;
+    averageMinutes: number;
+}
+
 export default function SocialPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Friend[]>([]);
     const [friends, setFriends] = useState<Friend[]>([]);
-    const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
+    const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
     const [sentRequests, setSentRequests] = useState<Friend[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const [dataLoading, setDataLoading] = useState(true);
@@ -111,7 +131,91 @@ export default function SocialPage() {
         setTimeout(() => setNotification(null), 5000);
     };
 
-    // Fetch accepted friends
+    // Add function to calculate streak
+    const calculateStreak = (workoutDates: string[]): number => {
+        if (!workoutDates.length) return 0;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const dates = workoutDates
+            .map(date => new Date(date))
+            .sort((a, b) => b.getTime() - a.getTime());
+
+        let streak = 0;
+        let currentDate = today;
+
+        for (let i = 0; i < dates.length; i++) {
+            const workoutDate = dates[i];
+            workoutDate.setHours(0, 0, 0, 0);
+
+            // If there's a gap of more than 1 day, break the streak
+            if (i > 0) {
+                const prevDate = dates[i - 1];
+                const dayDiff = Math.floor((prevDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
+                if (dayDiff > 1) break;
+            }
+
+            // If the workout was today or yesterday, count it
+            const dayDiff = Math.floor((currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (dayDiff <= 1) {
+                streak++;
+                currentDate = workoutDate;
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    };
+
+    // Add function to fetch workout stats
+    const fetchWorkoutStats = async (userId: string): Promise<WorkoutStats> => {
+        try {
+            // Fetch all workout sessions for the user
+            const { data: workouts, error } = await supabase
+                .from('workout_sessions')
+                .select('session_date, duration_minutes')
+                .eq('user_id', userId)
+                .order('session_date', { ascending: false });
+
+            if (error) throw error;
+
+            if (!workouts || workouts.length === 0) {
+                return {
+                    workouts: 0,
+                    streak: 0,
+                    averageMinutes: 0
+                };
+            }
+
+            // Calculate total workouts
+            const totalWorkouts = workouts.length;
+
+            // Calculate average duration
+            const totalMinutes = workouts.reduce((sum, workout) => sum + (workout.duration_minutes || 0), 0);
+            const averageMinutes = Math.round(totalMinutes / totalWorkouts);
+
+            // Calculate streak
+            const workoutDates = workouts.map(w => w.session_date);
+            const streak = calculateStreak(workoutDates);
+
+            return {
+                workouts: totalWorkouts,
+                streak,
+                averageMinutes
+            };
+        } catch (err) {
+            console.error('Error fetching workout stats:', err);
+            return {
+                workouts: 0,
+                streak: 0,
+                averageMinutes: 0
+            };
+        }
+    };
+
+    // Update fetchFriends to include real stats
     const fetchFriends = async (userId: string) => {
         try {
             // Get all friendships where the user is part of the relationship and status is accepted
@@ -149,20 +253,22 @@ export default function SocialPage() {
 
             if (friendError) throw friendError;
 
-            // Add mock stats to each friend
-            const friendsWithStats = (friendData || []).map(friend => ({
-                ...friend,
-                status: 'accepted',
-                stats: {
-                    workouts: Math.floor(Math.random() * 30) + 5,
-                    streak: Math.floor(Math.random() * 20) + 1,
-                    averageMinutes: Math.floor(Math.random() * 40) + 20
-                }
-            }));
+            // Fetch workout stats for each friend
+            const friendsWithStats = await Promise.all(
+                (friendData || []).map(async (friend) => {
+                    const stats = await fetchWorkoutStats(friend.id);
+                    return {
+                        ...friend,
+                        status: 'accepted',
+                        stats
+                    };
+                })
+            );
 
             setFriends(friendsWithStats);
         } catch (err) {
             console.error('Error fetching friends:', err);
+            showNotification('error', 'Failed to load friends');
         }
     };
 
@@ -199,16 +305,20 @@ export default function SocialPage() {
             }
 
             // Map the data to our expected format
-            const formattedRequests = friendships.map(friendship => ({
-                id: `${friendship.user_id}-${friendship.friend_id}`, // Create a unique ID from the composite key
-                created_at: friendship.created_at,
-                sender: {
-                    id: friendship.users.id,
-                    first_name: friendship.users.first_name,
-                    last_name: friendship.users.last_name,
-                    email: friendship.users.email
-                }
-            }));
+            const formattedRequests = friendships.map(friendship => {
+                return {
+                    id: `${friendship.user_id}-${friendship.friend_id}`,
+                    created_at: friendship.created_at,
+                    user_id: friendship.user_id,    // Store the full UUID
+                    friend_id: friendship.friend_id, // Store the full UUID
+                    sender: {
+                        id: friendship.users.id,
+                        first_name: friendship.users.first_name,
+                        last_name: friendship.users.last_name,
+                        email: friendship.users.email
+                    }
+                };
+            });
 
             setPendingRequests(formattedRequests);
         } catch (err) {
@@ -386,39 +496,44 @@ export default function SocialPage() {
         }
     };
 
-    // Accept a friend request
+    // Update acceptFriendRequest to include real stats
     const acceptFriendRequest = async (requestId: string) => {
         try {
-            // Split the composite ID back into user_id and friend_id
-            const [userId, friendId] = requestId.split('-');
+            // Find the request in our state
+            const request = pendingRequests.find(req => req.id === requestId);
+            if (!request) {
+                throw new Error('Request not found');
+            }
 
-            // Update the friendship status to accepted
+            // Use the stored UUIDs directly
             const { error } = await supabase
                 .from('friendships')
                 .update({ status: 'accepted' })
-                .eq('user_id', userId)
-                .eq('friend_id', friendId);
+                .match({
+                    user_id: request.user_id,
+                    friend_id: request.friend_id
+                });
 
-            if (error) throw error;
-
-            // Find the request that was accepted
-            const acceptedRequest = pendingRequests.find(req => req.id === requestId);
-            if (acceptedRequest) {
-                // Add to friends list with mock stats
-                const newFriend = {
-                    ...acceptedRequest.sender,
-                    status: 'accepted',
-                    stats: {
-                        workouts: Math.floor(Math.random() * 30) + 5,
-                        streak: Math.floor(Math.random() * 20) + 1,
-                        averageMinutes: Math.floor(Math.random() * 40) + 20
-                    }
-                };
-                setFriends(prev => [...prev, newFriend]);
-
-                // Remove from pending requests
-                setPendingRequests(prev => prev.filter(req => req.id !== requestId));
+            if (error) {
+                console.error('Error updating friendship:', error);
+                throw error;
             }
+
+            // Fetch real workout stats for the new friend
+            const stats = await fetchWorkoutStats(request.sender.id);
+
+            // Add to friends list with real stats
+            const newFriend = {
+                ...request.sender,
+                status: 'accepted',
+                stats
+            };
+            setFriends(prev => [...prev, newFriend]);
+
+            // Remove from pending requests
+            setPendingRequests(prev => prev.filter(req => req.id !== requestId));
+
+            showNotification('success', 'Friend request accepted');
         } catch (err) {
             console.error('Error accepting friend request:', err);
             showNotification('error', 'Failed to accept friend request');
@@ -428,20 +543,29 @@ export default function SocialPage() {
     // Reject/cancel a friend request
     const rejectFriendRequest = async (requestId: string) => {
         try {
-            // Split the composite ID back into user_id and friend_id
-            const [userId, friendId] = requestId.split('-');
+            // Find the request in our state
+            const request = pendingRequests.find(req => req.id === requestId);
+            if (!request) {
+                throw new Error('Request not found');
+            }
 
-            // Delete the friendship record
+            // Use the stored UUIDs directly
             const { error } = await supabase
                 .from('friendships')
                 .delete()
-                .eq('user_id', userId)
-                .eq('friend_id', friendId);
+                .match({
+                    user_id: request.user_id,
+                    friend_id: request.friend_id
+                });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Error deleting friendship:', error);
+                throw error;
+            }
 
             // Remove from pending requests
             setPendingRequests(prev => prev.filter(req => req.id !== requestId));
+            showNotification('success', 'Friend request rejected');
         } catch (err) {
             console.error('Error rejecting friend request:', err);
             showNotification('error', 'Failed to reject friend request');
