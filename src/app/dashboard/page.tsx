@@ -22,6 +22,7 @@ interface FriendStats {
     id: string;
     first_name: string;
     last_name: string;
+    email: string;
     workouts: number;
     streak: number;
     averageMinutes: number;
@@ -95,6 +96,7 @@ export default function DashboardOverview() {
                     id: friendId,
                     first_name: '',
                     last_name: '',
+                    email: '',
                     workouts: 0,
                     streak: 0,
                     averageMinutes: 0
@@ -116,6 +118,7 @@ export default function DashboardOverview() {
                 id: friendId,
                 first_name: '',
                 last_name: '',
+                email: '',
                 workouts: totalWorkouts,
                 streak,
                 averageMinutes
@@ -126,6 +129,7 @@ export default function DashboardOverview() {
                 id: friendId,
                 first_name: '',
                 last_name: '',
+                email: '',
                 workouts: 0,
                 streak: 0,
                 averageMinutes: 0
@@ -170,8 +174,11 @@ export default function DashboardOverview() {
                     .eq('user_id', authUser.id),
                 supabase
                     .from('friendships')
-                    .select('friend:users!frienships_friend_id_fkey ( id, first_name, last_name )')
-                    .eq('user_id', authUser.id)
+                    .select(`
+                        friend:users!frienships_friend_id_fkey ( id, first_name, last_name ),
+                        user:users!frienships_user_id_fkey ( id, first_name, last_name )
+                    `)
+                    .or(`user_id.eq.${authUser.id},friend_id.eq.${authUser.id}`)
                     .eq('status', 'accepted'),
             ])
 
@@ -200,18 +207,44 @@ export default function DashboardOverview() {
                 goal: g.goal as Goal
             })))
 
+            // Process friends data to get unique friends
+            const uniqueFriends = new Map<string, FriendStats>();
+            (friendsResponse.data || []).forEach((friendship: any) => {
+                if (!friendship) return; // Skip if friendship is null/undefined
+
+                // If current user is the user_id, friend is in friend field
+                // If current user is the friend_id, friend is in user field
+                const friend = friendship.user_id === authUser.id ? friendship.friend : friendship.user;
+                if (friend && friend.id && !uniqueFriends.has(friend.id)) {
+                    uniqueFriends.set(friend.id, {
+                        id: friend.id,
+                        first_name: friend.first_name || '',
+                        last_name: friend.last_name || '',
+                        email: friend.email || '',
+                        workouts: 0,
+                        streak: 0,
+                        averageMinutes: 0
+                    });
+                }
+            });
+
+            // Convert to array and take only first 3 friends
+            const firstThreeFriends = Array.from(uniqueFriends.values()).slice(0, 3);
+
             // Fetch workout stats for each friend
             const friendsWithStats = await Promise.all(
-                (friendsResponse.data || []).map(async (r: any) => {
-                    const stats = await fetchFriendStats(r.friend.id);
+                firstThreeFriends.map(async (friend: FriendStats) => {
+                    const stats = await fetchFriendStats(friend.id);
                     return {
-                        ...stats,
-                        first_name: r.friend.first_name,
-                        last_name: r.friend.last_name
+                        ...friend,
+                        workouts: stats.workouts,
+                        streak: stats.streak,
+                        averageMinutes: stats.averageMinutes
                     };
                 })
             );
 
+            // Set friends with the processed data
             setFriends(friendsWithStats);
         } catch (err) {
             console.error('Error in fetchAll:', err)
@@ -687,6 +720,11 @@ export default function DashboardOverview() {
                                     <Clock className="w-5 h-5 text-green-400" />
                                     <span className="text-2xl font-bold">{streakDays} days</span>
                                 </div>
+                                {streakDays > 0 && (
+                                    <p className="text-xs text-slate-400 mt-1">
+                                        Last workout: {sortedDates[0]}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -837,15 +875,19 @@ export default function DashboardOverview() {
                 </div>
 
                 {friends.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {friends.map((friend) => (
                             <div key={friend.id} className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
                                 <div className="flex items-center gap-3 mb-3">
                                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 flex items-center justify-center text-white">
-                                        {friend.first_name.charAt(0)}
+                                        {((friend.first_name || friend.email || '?').charAt(0)).toUpperCase()}
                                     </div>
                                     <div>
-                                        <p className="font-medium">{friend.first_name} {friend.last_name}</p>
+                                        <p className="font-medium">
+                                            {friend.first_name && friend.last_name
+                                                ? `${friend.first_name} ${friend.last_name}`
+                                                : friend.email || 'Unknown User'}
+                                        </p>
                                         <p className="text-sm text-slate-400">Active Friend</p>
                                     </div>
                                 </div>
@@ -853,15 +895,15 @@ export default function DashboardOverview() {
                                 <div className="grid grid-cols-3 gap-2">
                                     <div className="bg-slate-900/50 p-2 rounded-lg text-center">
                                         <p className="text-sm text-slate-400">Workouts</p>
-                                        <p className="font-medium">{friend.workouts}</p>
+                                        <p className="font-medium">{friend.workouts || 0}</p>
                                     </div>
                                     <div className="bg-slate-900/50 p-2 rounded-lg text-center">
                                         <p className="text-sm text-slate-400">Streak</p>
-                                        <p className="font-medium">{friend.streak} days</p>
+                                        <p className="font-medium">{friend.streak || 0} days</p>
                                     </div>
                                     <div className="bg-slate-900/50 p-2 rounded-lg text-center">
                                         <p className="text-sm text-slate-400">Avg. Min</p>
-                                        <p className="font-medium">{friend.averageMinutes}</p>
+                                        <p className="font-medium">{friend.averageMinutes || 0}</p>
                                     </div>
                                 </div>
                             </div>
