@@ -90,6 +90,9 @@ export default function SocialPage() {
     const [activeSection, setActiveSection] = useState('friends');
     const [expandedFriend, setExpandedFriend] = useState<string | null>(null);
     const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+    const [timePeriod, setTimePeriod] = useState('week');
+    const [sessions, setSessions] = useState<any[]>([]);
+    const [weekDateSet, setWeekDateSet] = useState(new Set());
 
     const router = useRouter();
     const supabase = createClient();
@@ -125,6 +128,19 @@ export default function SocialPage() {
 
         initialize();
     }, [router]);
+
+    useEffect(() => {
+        if (timePeriod === 'week') {
+            // Debug: print the week date set
+            console.log('Week Date Set:', Array.from(weekDateSet));
+            // Debug: print each session's date string and completion status
+            sessions.forEach(s => {
+                if (s && s.session_date && typeof s.completed !== 'undefined') {
+                    console.log('Session:', getDateString(s.session_date), '| Completed:', s.completed);
+                }
+            });
+        }
+    }, [sessions, timePeriod, weekDateSet]);
 
     const showNotification = (type: 'success' | 'error', message: string) => {
         setNotification({ type, message });
@@ -634,6 +650,15 @@ export default function SocialPage() {
         setExpandedFriend(prev => prev === friendId ? null : friendId);
     };
 
+    // Fix: define getDateString helper for debug
+    const getDateString = (dateInput: string | Date) => {
+        const d = typeof dateInput === 'string' ? new Date(dateInput) : new Date(dateInput);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     if (dataLoading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -857,13 +882,6 @@ export default function SocialPage() {
                                                             <p className="font-medium">{friend.stats?.averageMinutes} min</p>
                                                         </div>
                                                     </div>
-                                                </div>
-
-                                                <div className="flex justify-center mt-4">
-                                                    <button className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 transition-colors">
-                                                        <MessageSquare className="w-4 h-4" />
-                                                        <span>Send Message</span>
-                                                    </button>
                                                 </div>
                                             </div>
                                         )}

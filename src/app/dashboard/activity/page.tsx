@@ -20,6 +20,7 @@ interface EnhancedSession {
 
 export default function ActivitiesPage() {
     const [selectedFilter, setSelectedFilter] = useState('all');
+    const [timePeriod, setTimePeriod] = useState('week');
     const [sessions, setSessions] = useState<EnhancedSession[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
@@ -236,27 +237,105 @@ export default function ActivitiesPage() {
         }
     };
 
+    // Calculate date range based on selected time period
+    const getDateRange = () => {
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+
+        switch (timePeriod) {
+            case 'day':
+                const startOfDay = new Date(today);
+                startOfDay.setHours(0, 0, 0, 0);
+                return { start: startOfDay, end: today };
+            case 'week':
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+                startOfWeek.setHours(0, 0, 0, 0);
+                return { start: startOfWeek, end: today };
+            case 'month':
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                startOfMonth.setHours(0, 0, 0, 0);
+                return { start: startOfMonth, end: today };
+            default:
+                return { start: new Date(0), end: today }; // All time
+        }
+    };
+
+    // Helper to get date string (YYYY-MM-DD) from session_date
+    const getDateString = (dateInput: string | Date) => {
+        const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const { start, end } = getDateRange();
+
+    // For 'week' filter, generate all valid date strings for this week
+    let weekDateSet = new Set<string>();
+    if (timePeriod === 'week') {
+        let current = new Date(start);
+        current.setHours(0, 0, 0, 0);
+        while (current <= end) {
+            weekDateSet.add(getDateString(current));
+            current.setDate(current.getDate() + 1);
+        }
+    }
+
+    const isThisWeek = (session: EnhancedSession) => {
+        if (timePeriod !== 'week') return false;
+        const sessionDateStr = getDateString(session.session_date);
+        return weekDateSet.has(sessionDateStr) && session.completed;
+    };
+
     // Calculate summary statistics
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const isToday = (session: EnhancedSession) => session.session_date === todayStr && session.completed;
+
     const sessionsThisWeek = sessions.filter(s => {
-        const sessionDate = new Date(s.session_date);
-        const today = new Date();
-        const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
-        return sessionDate >= weekStart && s.completed;
+        if (timePeriod === 'day') {
+            return isToday(s);
+        } else if (timePeriod === 'week') {
+            return isThisWeek(s);
+        } else {
+            const sessionDate = new Date(s.session_date);
+            return sessionDate >= start && sessionDate <= end && s.completed;
+        }
     }).length;
 
     const totalActiveTime = sessions
-        .filter(s => s.completed)
+        .filter(s => {
+            if (timePeriod === 'day') {
+                return isToday(s);
+            } else if (timePeriod === 'week') {
+                return isThisWeek(s);
+            } else {
+                const sessionDate = new Date(s.session_date);
+                return sessionDate >= start && sessionDate <= end && s.completed;
+            }
+        })
         .reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
+
     const totalCalories = sessions
-        .filter(s => s.completed)
-        .reduce((sum, s) => sum + ((s.duration_minutes || 0) * 8), 0); // Using same MET calculation as dashboard
+        .filter(s => {
+            if (timePeriod === 'day') {
+                return isToday(s);
+            } else if (timePeriod === 'week') {
+                return isThisWeek(s);
+            } else {
+                const sessionDate = new Date(s.session_date);
+                return sessionDate >= start && sessionDate <= end && s.completed;
+            }
+        })
+        .reduce((sum, s) => sum + ((s.duration_minutes || 0) * 8), 0);
 
     // Calculate today's stats
-    const todaySessionsCount = sessions.filter(s => s.session_date === todayStr && s.completed).length;
+    const todaySessionsCount = sessions.filter(isToday).length;
     const todayActiveMinutes = sessions
-        .filter(s => s.session_date === todayStr && s.completed)
+        .filter(isToday)
         .reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
 
     const handleSessionAdded = (duration: number) => {
@@ -327,7 +406,7 @@ export default function ActivitiesPage() {
 
                 {/* Filters and Add Activity */}
                 <div className="flex justify-between items-center mb-6">
-                    <div className="flex space-x-3">
+                    <div className="flex items-center space-x-3">
                         <button
                             onClick={() => setSelectedFilter('all')}
                             className={`px-4 py-2 rounded-lg transition-colors ${selectedFilter === 'all'
@@ -355,6 +434,20 @@ export default function ActivitiesPage() {
                         >
                             Upcoming
                         </button>
+
+                        <div className="relative">
+                            <select
+                                value={timePeriod}
+                                onChange={(e) => setTimePeriod(e.target.value)}
+                                className="px-4 py-2 rounded-lg border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                                style={{ minWidth: '140px' }}
+                            >
+                                <option value="day" className="bg-slate-800 text-slate-100">Today</option>
+                                <option value="week" className="bg-slate-800 text-slate-100">This Week</option>
+                                <option value="month" className="bg-slate-800 text-slate-100">This Month</option>
+                                <option value="all" className="bg-slate-800 text-slate-100">All Time</option>
+                            </select>
+                        </div>
                     </div>
 
                     <button
@@ -373,7 +466,11 @@ export default function ActivitiesPage() {
                             <div className="w-12 h-12 rounded-full bg-blue-500/20 mx-auto flex items-center justify-center mb-3">
                                 <Calendar className="w-6 h-6 text-blue-400" />
                             </div>
-                            <p className="text-sm text-slate-300">This Week</p>
+                            <p className="text-sm text-slate-300">
+                                {timePeriod === 'day' ? 'Today' :
+                                    timePeriod === 'week' ? 'This Week' :
+                                        timePeriod === 'month' ? 'This Month' : 'All Time'}
+                            </p>
                             <p className="text-2xl font-bold mt-1">{sessionsThisWeek} Activities</p>
                         </div>
                     </SpotlightCard>
