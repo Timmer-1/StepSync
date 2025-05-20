@@ -29,16 +29,6 @@ export default function WorkoutDetailsModal({ isOpen, onClose, workout, onToggle
 
     const caloriesBurned = workout.duration_minutes * 8; // Using same MET calculation as dashboard
 
-    const handleToggleComplete = () => {
-        onToggleComplete(workout.id, workout.completed);
-        onClose();
-    };
-
-    const handleDelete = async () => {
-        onDelete?.(workout.id);
-        onClose();
-    };
-
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-slate-900 rounded-xl p-6 max-w-2xl w-full mx-4 relative">
@@ -54,37 +44,6 @@ export default function WorkoutDetailsModal({ isOpen, onClose, workout, onToggle
                 {/* Header */}
                 <div className="mb-4">
                     <h2 className="text-2xl font-bold">Workout Details</h2>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="mb-6 flex justify-between items-center">
-                    <button
-                        onClick={handleToggleComplete}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${workout.completed
-                            ? 'bg-green-500/20 text-green-400 border border-green-500/50'
-                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                            }`}
-                    >
-                        {workout.completed ? (
-                            <>
-                                <Check className="w-4 h-4" />
-                                <span>Completed</span>
-                            </>
-                        ) : (
-                            <>
-                                <Activity className="w-4 h-4" />
-                                <span>Mark as Complete</span>
-                            </>
-                        )}
-                    </button>
-
-                    <button
-                        onClick={handleDelete}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Delete Session</span>
-                    </button>
                 </div>
 
                 {/* Content */}

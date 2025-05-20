@@ -7,6 +7,7 @@ import { TextHoverEffect } from "@/app/ui/text-hover-effect";
 import { login } from './action';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { ShineBorder } from '@/components/magicui/shine-border';
 
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
@@ -67,7 +68,8 @@ export default function SignIn() {
   return (
     <GridBackground>
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 w-full max-w-lg space-y-4">
+        <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl p-6 w-full max-w-lg space-y-4">
+          <ShineBorder shineColor="#4ade80" duration={10} borderWidth={1} />
           {/* Logo and Title */}
           <div className="text-center space-y-2 py-6 px-4">
             <TextHoverEffect text="ProjectA" duration={0.2} />
