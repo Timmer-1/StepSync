@@ -83,7 +83,7 @@ export default function DashboardLayout({
                 <Sidebar userData={userData} onSignOut={handleSignOut} />
 
                 {/* Main Content */}
-                <div className="ml-64 flex-1 overflow-auto">
+                <div className="flex-1 lg:ml-64">
                     {/* Top Bar */}
                     <div className="p-4 border-b border-slate-700/50 flex justify-between items-center backdrop-blur-md bg-black/30 sticky top-0 z-10">
                         <h2 className="text-xl font-semibold">
@@ -105,7 +105,7 @@ export default function DashboardLayout({
                     </div>
 
                     {/* Dashboard Content */}
-                    <div className="p-6">
+                    <div className="p-4 lg:p-6">
                         {children}
                     </div>
                 </div>
