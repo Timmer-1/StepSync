@@ -72,7 +72,7 @@ export default function SignIn() {
           <ShineBorder shineColor="#4ade80" duration={10} borderWidth={1} />
           {/* Logo and Title */}
           <div className="text-center space-y-2 py-6 px-4">
-            <TextHoverEffect text="ProjectA" duration={0.2} />
+            <TextHoverEffect text="StepSync" duration={0.2} />
             <h2 className="text-2xl font-bold">Welcome back</h2>
             <p className="text-gray-400 mt-2">Please enter your details to sign in.</p>
           </div>
