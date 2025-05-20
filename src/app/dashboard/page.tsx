@@ -707,7 +707,7 @@ export default function DashboardOverview() {
 
             {/* Fitness Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <SpotlightCard className="p-6 rounded-xl">
+                <SpotlightCard className="p-6 rounded-xl" spotlightColor="rgba(59, 130, 246, 0.2)">
                     <div className="text-center">
                         <div className="w-12 h-12 rounded-full bg-blue-500/20 mx-auto flex items-center justify-center mb-3">
                             <Activity className="w-6 h-6 text-blue-400" />
@@ -717,7 +717,7 @@ export default function DashboardOverview() {
                     </div>
                 </SpotlightCard>
 
-                <SpotlightCard className="p-6 rounded-xl">
+                <SpotlightCard className="p-6 rounded-xl" spotlightColor="rgba(20, 184, 166, 0.2)">
                     <div className="text-center">
                         <div className="w-12 h-12 rounded-full bg-teal-500/20 mx-auto flex items-center justify-center mb-3">
                             <Activity className="w-6 h-6 text-teal-400" />
@@ -727,7 +727,7 @@ export default function DashboardOverview() {
                     </div>
                 </SpotlightCard>
 
-                <SpotlightCard className="p-6 rounded-xl">
+                <SpotlightCard className="p-6 rounded-xl" spotlightColor="rgba(34, 197, 94, 0.2)">
                     <div className="text-center">
                         <div className="w-12 h-12 rounded-full bg-green-500/20 mx-auto flex items-center justify-center mb-3">
                             <Clock className="w-6 h-6 text-green-400" />
@@ -737,7 +737,7 @@ export default function DashboardOverview() {
                     </div>
                 </SpotlightCard>
 
-                <SpotlightCard className="p-6 rounded-xl">
+                <SpotlightCard className="p-6 rounded-xl" spotlightColor="rgba(168, 85, 247, 0.2)">
                     <div className="text-center">
                         <div className="w-12 h-12 rounded-full bg-purple-500/20 mx-auto flex items-center justify-center mb-3">
                             <Activity className="w-6 h-6 text-purple-400" />

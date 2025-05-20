@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Activity } from 'lucide-react';
-import SpotlightCard from '@/app/ui/spotlightcard';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import AddSessionModal from '@/app/ui/addsessionmodal';
@@ -554,7 +553,7 @@ export default function CalendarPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Calendar Section */}
                 <div className="lg:col-span-2">
-                    <SpotlightCard className="p-6 rounded-xl">
+                    <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50">
                         {/* Calendar Header */}
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold">{formatMonthYear(currentMonth)}</h2>
@@ -615,12 +614,12 @@ export default function CalendarPage() {
                                 <span className="text-sm">Upcoming Workout</span>
                             </div>
                         </div>
-                    </SpotlightCard>
+                    </div>
                 </div>
 
                 {/* Selected Day Details */}
                 <div>
-                    <SpotlightCard className="p-6 rounded-xl">
+                    <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50">
                         <div className="flex items-center space-x-2 mb-4">
                             <CalendarIcon className="w-5 h-5 text-blue-400" />
                             <h2 className="text-lg font-semibold">
@@ -698,10 +697,10 @@ export default function CalendarPage() {
                                 </div>
                             </div>
                         )}
-                    </SpotlightCard>
+                    </div>
 
                     {/* Upcoming Workouts Preview */}
-                    <SpotlightCard className="p-6 rounded-xl mt-6">
+                    <div className="p-6 rounded-xl mt-6 bg-slate-900/50 border border-slate-800/50">
                         <h3 className="text-lg font-semibold mb-4">Upcoming Workouts</h3>
 
                         <div className="space-y-3">
@@ -759,7 +758,7 @@ export default function CalendarPage() {
                                 </button>
                             )}
                         </div>
-                    </SpotlightCard>
+                    </div>
 
                     {/* Quick navigation to Activity page */}
                     <div className="mt-6 text-center">
