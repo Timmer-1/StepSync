@@ -6,14 +6,14 @@ interface WorkoutDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     workout: {
-        id: number;
+        id: string;
         session_date: string;
         duration_minutes: number;
         notes: string | null;
         completed: boolean;
     } | null;
-    onToggleComplete: (id: number, currentStatus: boolean) => void;
-    onDelete?: (id: number) => void;
+    onToggleComplete: (id: string, currentStatus: boolean) => void;
+    onDelete?: (id: string) => void;
 }
 
 export default function WorkoutDetailsModal({ isOpen, onClose, workout, onToggleComplete, onDelete }: WorkoutDetailsModalProps) {

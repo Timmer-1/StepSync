@@ -152,7 +152,7 @@ export default function ActivitiesPage() {
         fetchSessions();
     }, []);
 
-    const toggleCompletion = async (sessionId: number, currentStatus: boolean) => {
+    const toggleCompletion = async (sessionId: string, currentStatus: boolean) => {
         try {
             const { error } = await supabase
                 .from('workout_sessions')
@@ -166,7 +166,7 @@ export default function ActivitiesPage() {
 
             // Update local state
             setSessions(sessions.map(session =>
-                session.id.toString() === sessionId.toString()
+                session.id === sessionId
                     ? { ...session, completed: !currentStatus }
                     : session
             ));
@@ -175,7 +175,7 @@ export default function ActivitiesPage() {
         }
     };
 
-    const handleDeleteSession = async (sessionId: number) => {
+    const handleDeleteSession = async (sessionId: string) => {
         try {
             // First delete any associated session exercises
             const { error: exercisesError } = await supabase
@@ -195,16 +195,10 @@ export default function ActivitiesPage() {
                 .eq('id', sessionId);
 
             // Update local state by removing the deleted session
-            setSessions(prevSessions => {
-                // Make sure we're comparing the same types (both strings)
-                const filteredSessions = prevSessions.filter(session =>
-                    session.id.toString() !== sessionId.toString()
-                );
-                return filteredSessions;
-            });
+            setSessions(prevSessions => prevSessions.filter(session => session.id !== sessionId));
 
             // Clear the selected workout if it was the one deleted
-            if (selectedWorkout && selectedWorkout.id.toString() === sessionId.toString()) {
+            if (selectedWorkout && selectedWorkout.id === sessionId) {
                 setSelectedWorkout(null);
             }
         } catch (err) {

@@ -789,19 +789,17 @@ export default function CalendarPage() {
                     isOpen={!!selectedWorkout}
                     onClose={() => setSelectedWorkout(null)}
                     workout={{
-                        id: Number(selectedWorkout.id), // Convert to number for the modal
+                        id: selectedWorkout.id, // Keep as string
                         session_date: selectedWorkout.session_date,
                         duration_minutes: selectedWorkout.duration_minutes,
                         notes: selectedWorkout.notes || '',
                         completed: selectedWorkout.completed
                     }}
                     onToggleComplete={(id, currentStatus) => {
-                        // Convert id back to string when calling our function
-                        toggleWorkoutCompletion(String(id), currentStatus);
+                        toggleWorkoutCompletion(id.toString(), currentStatus);
                     }}
                     onDelete={(id) => {
-                        // Convert id back to string when calling our function
-                        handleDeleteWorkout(String(id));
+                        handleDeleteWorkout(id.toString());
                     }}
                 />
             )}
