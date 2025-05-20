@@ -80,20 +80,20 @@ export default function DashboardOverview() {
         return streak;
     };
 
-    // Add function to fetch workout stats for a friend
-    const fetchFriendStats = async (friendId: string): Promise<FriendStats> => {
+    // Add function to fetch workout stats for a friend (reuse from social page)
+    const fetchWorkoutStats = async (userId: string): Promise<FriendStats> => {
         try {
             const { data: workouts, error } = await supabase
                 .from('workout_sessions')
                 .select('session_date, duration_minutes')
-                .eq('user_id', friendId)
+                .eq('user_id', userId)
                 .order('session_date', { ascending: false });
 
             if (error) throw error;
 
             if (!workouts || workouts.length === 0) {
                 return {
-                    id: friendId,
+                    id: userId,
                     first_name: '',
                     last_name: '',
                     email: '',
@@ -103,19 +103,14 @@ export default function DashboardOverview() {
                 };
             }
 
-            // Calculate total workouts
             const totalWorkouts = workouts.length;
-
-            // Calculate average duration
             const totalMinutes = workouts.reduce((sum, workout) => sum + (workout.duration_minutes || 0), 0);
             const averageMinutes = Math.round(totalMinutes / totalWorkouts);
-
-            // Calculate streak
             const workoutDates = workouts.map(w => w.session_date);
             const streak = calculateStreak(workoutDates);
 
             return {
-                id: friendId,
+                id: userId,
                 first_name: '',
                 last_name: '',
                 email: '',
@@ -124,9 +119,9 @@ export default function DashboardOverview() {
                 averageMinutes
             };
         } catch (err) {
-            console.error('Error fetching friend stats:', err);
+            console.error('Error fetching workout stats:', err);
             return {
-                id: friendId,
+                id: userId,
                 first_name: '',
                 last_name: '',
                 email: '',
@@ -137,6 +132,7 @@ export default function DashboardOverview() {
         }
     };
 
+    // Replace fetchAll's friend fetching logic with robust version from social page
     const fetchAll = async () => {
         setLoading(true)
         try {
@@ -161,8 +157,8 @@ export default function DashboardOverview() {
                 first_name: authUser.user_metadata.first_name
             })
 
-            // Fetch data with proper error handling
-            const [sessionsResponse, goalsResponse, friendsResponse] = await Promise.all([
+            // Fetch sessions and goals as before
+            const [sessionsResponse, goalsResponse] = await Promise.all([
                 supabase
                     .from('workout_sessions')
                     .select('id, session_date, duration_minutes, completed')
@@ -172,17 +168,8 @@ export default function DashboardOverview() {
                     .from('user_goals')
                     .select('progress_value, goal:goals (id, name, target_value, unit)')
                     .eq('user_id', authUser.id),
-                supabase
-                    .from('friendships')
-                    .select(`
-                        friend:users!frienships_friend_id_fkey ( id, first_name, last_name ),
-                        user:users!frienships_user_id_fkey ( id, first_name, last_name )
-                    `)
-                    .or(`user_id.eq.${authUser.id},friend_id.eq.${authUser.id}`)
-                    .eq('status', 'accepted'),
             ])
 
-            // Check for errors in each response and throw if any exist
             if (sessionsResponse.error) {
                 console.error('Sessions error:', sessionsResponse.error)
                 throw sessionsResponse.error
@@ -191,15 +178,6 @@ export default function DashboardOverview() {
                 console.error('Goals error:', goalsResponse.error)
                 throw goalsResponse.error
             }
-            if (friendsResponse.error) {
-                console.error('Friends error:', friendsResponse.error)
-                throw friendsResponse.error
-            }
-
-            // Log the data we received
-            console.log('Fetched sessions:', sessionsResponse.data)
-            console.log('Fetched goals:', goalsResponse.data)
-            console.log('Fetched friends:', friendsResponse.data)
 
             setSessions(sessionsResponse.data || [])
             setGoals((goalsResponse.data || []).map((g: any) => ({
@@ -207,48 +185,54 @@ export default function DashboardOverview() {
                 goal: g.goal as Goal
             })))
 
-            // Process friends data to get unique friends
-            const uniqueFriends = new Map<string, FriendStats>();
-            (friendsResponse.data || []).forEach((friendship: any) => {
-                if (!friendship) return; // Skip if friendship is null/undefined
+            // --- Robust friend fetching logic from social page ---
+            // Get all friendships where the user is part of the relationship and status is accepted
+            const { data: outgoingFriends, error: outgoingError } = await supabase
+                .from('friendships')
+                .select('friend_id')
+                .eq('user_id', authUser.id)
+                .eq('status', 'accepted');
 
-                // If current user is the user_id, friend is in friend field
-                // If current user is the friend_id, friend is in user field
-                const friend = friendship.user_id === authUser.id ? friendship.friend : friendship.user;
-                if (friend && friend.id && !uniqueFriends.has(friend.id)) {
-                    uniqueFriends.set(friend.id, {
-                        id: friend.id,
-                        first_name: friend.first_name || '',
-                        last_name: friend.last_name || '',
-                        email: friend.email || '',
-                        workouts: 0,
-                        streak: 0,
-                        averageMinutes: 0
-                    });
-                }
-            });
+            if (outgoingError) throw outgoingError;
 
-            // Convert to array and take only first 3 friends
-            const firstThreeFriends = Array.from(uniqueFriends.values()).slice(0, 3);
+            const { data: incomingFriends, error: incomingError } = await supabase
+                .from('friendships')
+                .select('user_id')
+                .eq('friend_id', authUser.id)
+                .eq('status', 'accepted');
 
-            // Fetch workout stats for each friend
-            const friendsWithStats = await Promise.all(
-                firstThreeFriends.map(async (friend: FriendStats) => {
-                    const stats = await fetchFriendStats(friend.id);
-                    return {
-                        ...friend,
-                        workouts: stats.workouts,
-                        streak: stats.streak,
-                        averageMinutes: stats.averageMinutes
-                    };
-                })
-            );
+            if (incomingError) throw incomingError;
 
-            // Set friends with the processed data
+            const outgoingIds = outgoingFriends?.map(item => item.friend_id) || [];
+            const incomingIds = incomingFriends?.map(item => item.user_id) || [];
+            const allFriendIds = [...outgoingIds, ...incomingIds];
+
+            let friendsWithStats: FriendStats[] = [];
+            if (allFriendIds.length > 0) {
+                // Fetch all friend details in a single query
+                const { data: friendData, error: friendError } = await supabase
+                    .from('users')
+                    .select('id, first_name, last_name, email')
+                    .in('id', allFriendIds);
+
+                if (friendError) throw friendError;
+
+                // Fetch workout stats for each friend
+                friendsWithStats = await Promise.all(
+                    (friendData || []).slice(0, 3).map(async (friend) => {
+                        const stats = await fetchWorkoutStats(friend.id);
+                        return {
+                            ...friend,
+                            workouts: stats.workouts,
+                            streak: stats.streak,
+                            averageMinutes: stats.averageMinutes
+                        };
+                    })
+                );
+            }
             setFriends(friendsWithStats);
         } catch (err) {
             console.error('Error in fetchAll:', err)
-            // Set empty arrays on error to prevent undefined states
             setSessions([])
             setGoals([])
             setFriends([])
