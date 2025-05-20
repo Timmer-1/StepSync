@@ -377,19 +377,45 @@ export default function ActivitiesPage() {
         new Set(sessions.filter(s => s.completed).map(s => s.session_date))
     ).sort((a, b) => b.localeCompare(a)); // Descending
 
-    let streak = 0;
-    let current = new Date();
-    for (let i = 0; i < uniqueSessionDates.length; i++) {
-        const dateStr = current.toISOString().slice(0, 10);
-        if (uniqueSessionDates.includes(dateStr)) {
-            streak++;
-            // Move to previous day
-            current.setDate(current.getDate() - 1);
-        } else {
-            break;
+    // Calculate streak using the correct implementation
+    const calculateStreak = (workoutDates: string[]): number => {
+        if (!workoutDates.length) return 0;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const dates = workoutDates
+            .map(date => new Date(date))
+            .sort((a, b) => b.getTime() - a.getTime());
+
+        let streak = 0;
+        let currentDate = today;
+
+        for (let i = 0; i < dates.length; i++) {
+            const workoutDate = dates[i];
+            workoutDate.setHours(0, 0, 0, 0);
+
+            // If there's a gap of more than 1 day, break the streak
+            if (i > 0) {
+                const prevDate = dates[i - 1];
+                const dayDiff = Math.floor((prevDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
+                if (dayDiff > 1) break;
+            }
+
+            // If the workout was today or yesterday, count it
+            const dayDiff = Math.floor((currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (dayDiff <= 1) {
+                streak++;
+                currentDate = workoutDate;
+            } else {
+                break;
+            }
         }
-    }
-    const streakDays = streak;
+
+        return streak;
+    };
+
+    const streakDays = calculateStreak(uniqueSessionDates);
 
     return (
         <GridBackground>

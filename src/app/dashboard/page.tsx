@@ -46,37 +46,26 @@ export default function DashboardOverview() {
     const calculateStreak = (workoutDates: string[]): number => {
         if (!workoutDates.length) return 0;
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // Get unique dates as YYYY-MM-DD
+        const uniqueDates = Array.from(new Set(workoutDates.map((date: string) => date.slice(0, 10))));
+        if (uniqueDates.length === 0) return 0;
 
-        const dates = workoutDates
-            .map(date => new Date(date))
-            .sort((a, b) => b.getTime() - a.getTime());
+        // Sort descending
+        uniqueDates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
         let streak = 0;
-        let currentDate = today;
+        let current = new Date();
+        current.setHours(0, 0, 0, 0);
 
-        for (let i = 0; i < dates.length; i++) {
-            const workoutDate = dates[i];
-            workoutDate.setHours(0, 0, 0, 0);
-
-            // If there's a gap of more than 1 day, break the streak
-            if (i > 0) {
-                const prevDate = dates[i - 1];
-                const dayDiff = Math.floor((prevDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
-                if (dayDiff > 1) break;
-            }
-
-            // If the workout was today or yesterday, count it
-            const dayDiff = Math.floor((currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
-            if (dayDiff <= 1) {
+        while (true) {
+            const dateStr = current.toISOString().split('T')[0];
+            if (uniqueDates.includes(dateStr)) {
                 streak++;
-                currentDate = workoutDate;
+                current.setDate(current.getDate() - 1);
             } else {
                 break;
             }
         }
-
         return streak;
     };
 
@@ -85,8 +74,9 @@ export default function DashboardOverview() {
         try {
             const { data: workouts, error } = await supabase
                 .from('workout_sessions')
-                .select('session_date, duration_minutes')
+                .select('session_date, duration_minutes, completed')
                 .eq('user_id', userId)
+                .eq('completed', true)
                 .order('session_date', { ascending: false });
 
             if (error) throw error;
@@ -883,7 +873,7 @@ export default function DashboardOverview() {
                                     </div>
                                     <div className="bg-slate-900/50 p-2 rounded-lg text-center">
                                         <p className="text-sm text-slate-400">Streak</p>
-                                        <p className="font-medium">{friend.streak || 0} days</p>
+                                        <p className="font-medium">{friend.streak || 0} {friend.streak === 1 ? 'day' : 'days'}</p>
                                     </div>
                                     <div className="bg-slate-900/50 p-2 rounded-lg text-center">
                                         <p className="text-sm text-slate-400">Avg. Min</p>
