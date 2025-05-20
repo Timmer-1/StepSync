@@ -1,11 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Users, X, Check, Activity, Accessibility } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Activity } from 'lucide-react';
 import SpotlightCard from '@/app/ui/spotlightcard';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
-import SessionButton from '@/app/ui/sessionbutton';
 import AddSessionModal from '@/app/ui/addsessionmodal';
 import WorkoutDetailsModal from '@/app/ui/workoutdetailsmodal';
 import Link from 'next/link';

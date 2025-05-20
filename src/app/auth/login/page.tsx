@@ -18,39 +18,6 @@ export default function SignIn() {
 
   const supabase = createClient();
 
-  const handleGoogleSignIn = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) throw error;
-      // The user will be redirected to Google's auth page
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-    }
-  };
-
-  const handleGithubSignIn = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) throw error;
-      // The user will be redirected to GitHub's auth page
-    }
-    catch (error) {
-      console.error('Error signing in with GitHub:', error);
-    }
-  };
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setErrorMessage(null)
