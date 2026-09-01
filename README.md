@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StepSync
 
-## Getting Started
+A fitness tracking app for people who lose momentum training alone. Set goals, log sessions against them, and follow other users so progress is visible instead of private.
 
-First, run the development server:
+**Live:** [stepsync-sigma.vercel.app](https://stepsync-sigma.vercel.app)
+
+<!-- Add a screenshot or short GIF of the dashboard here. It does more for a first-time visitor than anything below. -->
+
+## What it does
+
+- **Goal setting.** Define a target, then track sessions against it rather than logging workouts into a void.
+- **Session logging.** Record workouts with the details that matter for the goal you set.
+- **Dashboard.** Goal progress and workout analytics in one view.
+- **Calendar.** Sessions laid out by date so gaps are obvious.
+- **Social layer.** Follow other users and see their progress.
+
+## Stack
+
+TypeScript, Next.js, React, Tailwind CSS, Supabase (Postgres + Auth), deployed on Vercel.
+
+## Data model
+
+Four core tables, normalized rather than denormalized into a single log:
+
+| Table | Holds |
+| --- | --- |
+| `users` | Profile and auth identity |
+| `workouts` | Canonical exercise definitions |
+| `sessions` | A logged instance of a workout by a user, with date and metrics |
+| `goals` | A user's target, joined against sessions to compute progress |
+| `follows` | Directed user-to-user relationships for the social feed |
+
+Dashboard and calendar views resolve from relational queries across these tables instead of separate fetches per widget.
+
+## Running locally
+
+```bash
+git clone https://github.com/TimTans/StepSync.git
+cd StepSync
+npm install
+```
+
+Create `.env.local` in the project root:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Both come from your Supabase project under Settings, API.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Status
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built May 2025. Not actively maintained.
